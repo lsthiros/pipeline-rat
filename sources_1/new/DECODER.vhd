@@ -3,13 +3,34 @@
 -- Engineers: Chris Gerdom
 -- Comments: This module decodes the control signals from the instructions
 -- branches and instructions that use pc counter are forwareded to the 
+-- branch table
+-- hex val	branch option
+-- 0 none
+-- 1 BRCC
+-- 2 BRCS
+-- 3 BREQ
+-- 4 BRN
+-- 5 BRNE
+-- 6 CALL
+-- 7 RET
+-- 8 RETID
+-- 9 RETIE
+-- A
+-- B 
+-- C 
+-- D 
+-- E
+-- F 
+
+
+
 ----------------------------------------------------------------------------------
 
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
-entity CONTROL_UNIT is
+entity DECODER is
     Port ( 
            INT           : in   STD_LOGIC;
            RESET         : in   STD_LOGIC;
@@ -44,11 +65,13 @@ entity CONTROL_UNIT is
            I_SET         : out  STD_LOGIC;
            I_CLR         : out  STD_LOGIC;
            IO_STRB       : out  STD_LOGIC;
+           BRANCH_TYPE   : out  STD_LOGIC_VECTOR (3 downto 0);
+           
            
            RST           : out  STD_LOGIC);
-end CONTROL_UNIT;
+end DECODER;
 
-architecture Behavioral of CONTROL_UNIT is
+architecture Behavioral of DECODER is
 TYPE state_type is (ST_FETCH, ST_EXEC, ST_INIT, ST_INT);
 signal PS, NS : state_type;
 
@@ -58,7 +81,7 @@ begin
 
 op <= OPCODE_HI_5 & OPCODE_LO_2;
 
-comb_proc: process(op, PS, NS, INT, C, Z)
+comb_proc: process(op, PS, NS, INT)
     begin
 PC_INC        <= '0';   PC_MUX_SEL    <= "00";   PC_LD       <= '0';
 SP_LD         <= '0';   SP_INCR       <= '0';    SP_DECR     <= '0';
@@ -69,6 +92,7 @@ FLG_C_SET     <= '0';   FLG_C_LD      <= '0';   FLG_C_CLR     <= '0';
 FLG_Z_LD      <= '0';   FLG_LD_SEL    <= '0';   FLG_SHAD_LD   <= '0';
 I_SET         <= '0';   I_CLR         <= '0';   IO_STRB       <= '0';
 RST           <= '0';
+BRANCH_TYPE <= x"0";
 
 case op is
 	when "0000100" => -- ADD RR
@@ -127,35 +151,17 @@ case op is
 		FLG_C_LD    <= '1';
 		FLG_Z_LD    <= '1';
 	when "0010101" => -- BRCC
-		if(C = '0') then
-			 PC_LD      <= '1';
-			 PC_MUX_SEL <= "00";
-		elsif(C = '1') then
-		end if;
+		BRANCH_TYPE <= x"1";
 	when "0010100" => -- BRCS
-		if(C = '1') then
-			PC_LD       <= '1';
-			PC_MUX_SEL  <= "00";
-		elsif(C = '0') then
-		end if;
+		BRANCH_TYPE <= x"2";
 	when "0010010" => -- BREQ
-		if(Z = '1') then
-			PC_LD       <= '1';
-			PC_MUX_SEL  <= "00";
-		elsif(Z = '0') then
-		end if;
+		BRANCH_TYPE <= x"3";
 	when "0010000" => -- BRN
-		PC_LD      <= '1';
-		PC_MUX_SEL <= "00";
+		BRANCH_TYPE <= x"4";
 	when "0010011" => -- BRNE
-		if(Z = '0') then
-			PC_LD      <= '1';
-			PC_MUX_SEL <= "00";
-		elsif(Z = '1') then
-		end if;
+		BRANCH_TYPE <= x"5";
 	when "0010001" => -- CALL
-		PC_LD        <= '1';
-		PC_MUX_SEL   <= "00";
+		BRANCH_TYPE <= x"6";
 		SP_LD        <= '0';
 		SP_INCR      <= '0';
 		SP_DECR      <= '1';
@@ -264,14 +270,12 @@ case op is
 		SCR_ADDR_SEL <= "11";
 		SCR_DATA_SEL <= '0';
 	when "0110010" => -- RET
-		PC_LD        <= '1';
-		PC_MUX_SEL   <= "01";
+		BRANCH_TYPE <= x"7";
 		SP_INCR      <= '1';
 		SCR_WE       <= '0';
 		SCR_ADDR_SEL <= "10";
 	when "0110110" => -- RETID
-		PC_LD        <= '1';
-		PC_MUX_SEL   <= "01";
+		BRANCH_TYPE <= x"8";
 		SCR_ADDR_SEL <= "10";
 		SP_INCR      <= '1';
 		FLG_Z_LD     <= '1';
@@ -279,8 +283,7 @@ case op is
 		FLG_LD_SEL   <= '1';
 		I_CLR        <= '1';
 	when "0110111" => -- RETIE
-		PC_LD        <= '1';
-		PC_MUX_SEL   <= "01";
+		BRANCH_TYPE <= x"9";
 		SCR_ADDR_SEL <= "10";
 		SP_INCR      <= '1';
 		FLG_Z_LD     <= '1';
@@ -370,8 +373,7 @@ case op is
 		FLG_C_SET     <= '0';   FLG_C_LD      <= '0';   FLG_C_CLR     <= '0';
 		FLG_Z_LD      <= '0';   FLG_LD_SEL    <= '0';   FLG_SHAD_LD   <= '0';
 		I_SET         <= '0';   I_CLR         <= '0';   IO_STRB       <= '0';
-		RST           <= '0';
-                end case;
+		RST           <= '0';   BRANCH_TYPE   <= x"0";
         end case;
     end process comb_proc;
 end Behavioral;
