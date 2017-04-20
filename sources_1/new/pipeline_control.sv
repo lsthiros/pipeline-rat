@@ -50,7 +50,6 @@ module pipeline_control(
     wire call_det;
     wire branch_miss;
     wire pc_stall;
-    wire pc_load;
     wire mem_stall;
     wire return_det;
     

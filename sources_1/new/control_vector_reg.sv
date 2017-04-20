@@ -73,6 +73,7 @@ module control_vector_reg(
     output logic out_IO_STRB      ,
     output logic[3:0] out_BRANCH_TYPE  ,
     output logic out_rst          ,
+    output logic [9:0] out_dest_addr,
 
     input logic in_PC_LD        ,
     input logic in_PC_INC       ,
@@ -98,6 +99,7 @@ module control_vector_reg(
     input logic in_IO_STRB      ,
     input logic[3:0] in_BRANCH_TYPE  ,
     input logic in_rst          ,
+    input logic [9:0] in_dest_addr,
 	input logic interupt,
 	input logic clk,
 	input logic nop,
@@ -126,6 +128,7 @@ always @ (posedge clk) begin
 	out_DY = in_DY;
 	out_WB_ADDR = in_WB_ADDR;
 	out_PC = in_PC;
+	out_dest_addr <= in_dest_addr;
 	
 //// when nop
 if(interupt == 1'b1) begin

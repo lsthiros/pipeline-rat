@@ -37,8 +37,8 @@ module pipeline_cpu(
     wire pc_load;
     wire pc_inc;
     wire pc_reset;
-    wire pc_mux_sel;
-    wire pc_count;
+    wire [1:0] pc_mux_sel;
+    wire [9:0] pc_count;
     
     wire mem_stall;
     
@@ -64,7 +64,7 @@ module pipeline_cpu(
     
     wire dec_pc_ld;
     wire dec_pc_inc;
-    wire dec_pc_mux_sel;
+    wire [1:0] dec_pc_mux_sel;
     wire dec_sp_ld;
     wire dec_sp_incr;
     wire dec_sp_decr;
@@ -88,7 +88,7 @@ module pipeline_cpu(
     
     wire cv_pc_ld;
     wire cv_pc_inc;
-    wire cv_pc_mux_sel;
+    wire [1:0] cv_pc_mux_sel;
     wire cv_sp_ld;
     wire cv_sp_incr;
     wire cv_sp_decr;
@@ -99,6 +99,8 @@ module pipeline_cpu(
     wire cv_scr_we;
     wire cv_scr_data_sel;
     wire [1:0] cv_scr_addr_sel;
+    wire [7:0] cv_dx_out;
+    wire [7:0] cv_dy_out;
     wire cv_flg_c_set;
     wire cv_flg_c_clr;
     wire cv_flg_c_ld;
@@ -108,8 +110,11 @@ module pipeline_cpu(
     wire cv_i_set;
     wire cv_i_clr;
     wire cv_iostrobe;
-    wire cv_ir;
+    wire [7:0] cv_ir;
     wire [3:0] cv_branch_type;
+    wire [4:0] cv_wb_addr;
+    wire [9:0] cv_dest_addr;
+    wire [9:0] cv_pc_out;
     
     wire pipeline_control_int;
     wire pipeline_control_reset;
@@ -210,8 +215,8 @@ module pipeline_cpu(
         .in_ALU_OPY_SEL(dec_alu_opy_sel),   
         .in_ALU_SEL(dec_alu_sel),     
         .in_SCR_WE(dec_scr_we),   
-        .in_SCR_DATA_SE(dec_scr_data_se),   
-        .in_SCR_ADDR_SE(dec_scr_addr_se),
+        .in_SCR_DATA_SE(dec_scr_data_sel),   
+        .in_SCR_ADDR_SE(dec_scr_addr_sel),
         .in_FLG_C_SET(dec_flg_c_set),   
         .in_FLG_C_CLR(dec_flg_c_clr),   
         .in_FLG_C_LD(dec_flg_c_ld),   
@@ -238,8 +243,8 @@ module pipeline_cpu(
         .out_ALU_OPY_SEL(cv_alu_opy_sel),   
         .out_ALU_SEL(cv_alu_sel),     
         .out_SCR_WE(cv_scr_we),   
-        .out_SCR_DATA_SE(cv_scr_data_se),   
-        .out_SCR_ADDR_SE(cv_scr_addr_se),
+        .out_SCR_DATA_SE(cv_scr_data_sel),   
+        .out_SCR_ADDR_SE(cv_scr_addr_sel),
         .out_FLG_C_SET(cv_flg_c_set),   
         .out_FLG_C_CLR(cv_flg_c_clr),   
         .out_FLG_C_LD(cv_flg_c_ld),   
@@ -264,16 +269,18 @@ module pipeline_cpu(
         .out_WB_ADDR (cv_wb_addr),
         // program counters
         .in_PC (fetch_addr_out),
-        .out_PC (cv_pc_out)    
+        .out_PC (cv_pc_out),
+        
+        .in_dest_addr(fetch_instr_out[12:3]),
+        .out_dest_addr(cv_dest_addr)
     );
     
     assign io_strb = cv_io_strobe;
     assign port_id = cv_ir;
     assign out_port = cv_dx_out;
     
-    
     wire alu_c;
-    wire alu_b;
+    wire [7:0] alu_b;
     wire alu_z;
     wire [7:0] alu_result;
     
@@ -305,7 +312,7 @@ module pipeline_cpu(
     assign alu_b = (cv_alu_opy_sel == 1'b1) ? cv_ir : cv_dy_out;
     ALU my_alu(
         .SEL(cv_alu_sel),
-        .A (cv_out_dx),
+        .A (cv_dx_out),
         .B (alu_b),
         .CIN (flg_c),
         .C (alu_c),
@@ -331,7 +338,7 @@ module pipeline_cpu(
     SCRATCH_RAM my_scratch_ram(
         .CLK(clk),
         .WE(cv_scr_we),
-        .ADDR(cv_scr_addr),
+        .ADDR(cv_ir[7:0]),
         .DATA_IN(scr_data_in),
         .DATA_OUT(scr_data_out)
     );

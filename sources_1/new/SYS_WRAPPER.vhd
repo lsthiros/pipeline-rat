@@ -30,7 +30,7 @@ signal s_sseg_count2 : STD_LOGIC_VECTOR(7 downto 0)  := X"00";
 signal s_interrupt   : STD_LOGIC := '0';
 
 -- Declare RAT_wrapper ------------------------------------------------------
-component RAT_wrapper
+component RAT_pipeline_wrapper
     Port ( LEDS      : out   STD_LOGIC_VECTOR (15 downto 0);
            SSEG_VAL1 : out   STD_LOGIC_VECTOR (13 downto 0);
            SSEG_VAL2 : out   STD_LOGIC_VECTOR (7 downto 0);
