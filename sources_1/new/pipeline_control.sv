@@ -28,7 +28,7 @@ module pipeline_control(
     input reg_wb_en,
     input [4:0] reg_ex,
     input reg_ex_en,
-    input instr_type,
+    input [3:0] instr_type,
     input branch_taken,
     input reset,
     input interrupt,
@@ -48,11 +48,12 @@ module pipeline_control(
     
     wire raw_ex = ((reg_a == reg_ex) || (reg_b == reg_ex)) && reg_ex_en;
     wire raw_wb = ((reg_a == reg_wb) || (reg_b == reg_wb)) && reg_wb_en;
-    wire call_det = 0;
-    wire branch_miss = 0;
-    wire pc_stall = 0;
-    wire mem_stall = 0;
-    wire return_det = 0;
+    wire call_det;
+    wire branch_miss;
+    wire pc_stall;
+    wire pc_load;
+    wire mem_stall;
+    wire return_det;
     
     assign dec_nop = (branch_miss || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
         || (interrupt || current_state == INT0 || current_state == INT1)
@@ -60,7 +61,10 @@ module pipeline_control(
     assign pc_stall = (raw_ex || current_state == RAW_EX || raw_wb);
     assign mem_stall = pc_stall;
     assign pc_reset = reset;
-    assign pc_inc = (interrupt && !reset);
+    assign pc_inc = (interrupt && !reset && !branch_taken);
+    assign pc_load = branch_taken;
+    assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9) || instr_type == 4'h6;
+    assign branch_miss = (instr_type == 4'h1 || instr_type == 4'h2 || instr_type == 4'h3 || instr_type == 4'h4 || instr_type == 4'h5);
     
     
     
