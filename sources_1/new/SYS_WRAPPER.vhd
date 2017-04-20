@@ -75,7 +75,7 @@ end component;
 begin
 
 -- Instantiate RAT_WRAPPER --------------------------------------------------
-rat: RAT_wrapper
+rat: RAT_pipeline_wrapper
     Port Map(
         LEDS      => LEDS,
         SSEG_VAL1 => s_sseg_count1,

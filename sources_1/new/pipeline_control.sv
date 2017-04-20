@@ -35,7 +35,6 @@ module pipeline_control(
     output imem_addr_mux,
     output fetch_latch_en,
     output dec_nop,
-    output wb_disable_override,
     output pc_inc,
     output pc_load,
     output pc_reset
@@ -68,7 +67,7 @@ module pipeline_control(
     
     
     
-    always_comb @ *
+    always_comb
     begin
         if (reset) begin
             nextState <= RESET0;

@@ -21,7 +21,13 @@
 
 
 module pipeline_cpu(
-    input clk
+    input clk,
+    input rst,
+    input input_interrupt,
+    input [7:0] in_port,
+    output [7:0] out_port,
+    output [7:0] port_id,
+    output io_strb
     );
     
     wire interrupt;
@@ -48,7 +54,7 @@ module pipeline_cpu(
     wire [9:0]  fetch_addr_out;
     
     /* Register file interface */
-    wire [7:0] reg_data_in;
+    logic [7:0] reg_data_in;
     wire [4:0] reg_wr_addr;
     wire [7:0] reg_dx_out;
     wire [7:0] reg_dy_out;
@@ -114,7 +120,7 @@ module pipeline_cpu(
     PC my_pc (
         .CLK        (clk),
         .PC_INC     (pc_inc),
-        .PC_LOAD    (pc_load),
+        .PC_LD    (pc_load),
         .RST        (pc_reset),
         .PC_MUX_SEL (pc_mux_sel),
         .FROM_IMMED (pc_immed_address),
@@ -148,14 +154,14 @@ module pipeline_cpu(
         .addr     (pc_delay),
         .stall    (fetch_reg_stall),
         .addr_out (fetch_addr_out),
-        .addr_out (fetch_instr_out)
+        .instr_out (fetch_instr_out)
     );
     
     RegisterFile my_reg_file(
         .CLK (clk),
         .ADRX (fetch_instr_out[12:8]),
         .ADRY (fetch_instr_out[7:3]),
-        .WR_ADR (reg_wr_adr),
+        .WR_ADR (reg_wr_addr),
         .DX_OUT (reg_dx_out),
         .DY_OUT (reg_dy_out),
         .D_IN   (reg_data_in),
@@ -163,7 +169,6 @@ module pipeline_cpu(
     );
     
     DECODER my_decoder(
-        .CLK (clk),
         .OPCODE_HI_5 (fetch_instr_out[17:13]),
         .OPCODE_LO_2 (fetch_instr_out[1:0]),
         .INT         (pipeline_control_int),
@@ -189,7 +194,7 @@ module pipeline_cpu(
         .FLG_SHAD_LD (dec_flg_shad_ld),
         .I_SET(dec_i_set),
         .I_CLR(dec_i_clr),
-        .IO_STROBE (dec_iostrobe),
+        .IO_STRB (dec_iostrobe),
         .BRANCH_TYPE (dec_branch_type)
     );
     
@@ -215,10 +220,10 @@ module pipeline_cpu(
         .in_FLG_SHAD_LD(dec_flg_shad_ld),   
         .in_I_SET(dec_i_set),   
         .in_I_CLR(dec_i_clr),   
-        .in_IO_STRBE(dec_io_strobe),   
+        .in_IO_STRB(dec_io_strobe),   
         .in_BRANCH_TYPE(dec_branch_type), 
         .in_rst(dec_rst),   
-        .iterupt(pipeline_control_int), // this might be the interupt from control not instruction             
+        .interupt(pipeline_control_int), // this might be the interupt from control not instruction             
         .clk(clk),                   
         .nop(pipeline_control_nop),
                            
@@ -243,14 +248,11 @@ module pipeline_cpu(
         .out_FLG_SHAD_LD(cv_flg_shad_ld),   
         .out_I_SET(cv_i_set),   
         .out_I_CLR(cv_i_clr),   
-        .out_IO_STRBE(cv_io_strobe),   
-        .out_BRANCH_TYPE(cv_branch_type), 
-        .in_rst(cv_rst),                 
-        .clk(clk),                   
-        .nop(pipeline_control_nop),
+        .out_IO_STRB(cv_io_strobe),   
+        .out_BRANCH_TYPE(cv_branch_type),
         
         	// instruction data
-        .in_IR(fetch_instr_out[6:0]),
+        .in_IR(fetch_instr_out[7:0]),
         .out_IR (cv_ir),
         // register values
         .in_DX (reg_dx_out),
@@ -264,6 +266,11 @@ module pipeline_cpu(
         .in_PC (fetch_addr_out),
         .out_PC (cv_pc_out)    
     );
+    
+    assign io_strb = cv_io_strobe;
+    assign port_id = cv_ir;
+    assign out_port = cv_dx_out;
+    
     
     wire alu_c;
     wire alu_b;
@@ -310,8 +317,6 @@ module pipeline_cpu(
     logic [9:0] scr_data_in;
     wire [9:0] scr_data_out;
     
-    wire [8:0] sp_data_out;
-    
     always_comb begin
         case (cv_scr_addr_sel)
             2'h0: scr_addr <= cv_dy_out;
@@ -337,12 +342,71 @@ module pipeline_cpu(
     SP my_sp(
         .CLK(clk),
         .SP_LD(cv_sp_ld),
-        .SP_INC(cv_sp_inc),
+        .SP_INCR(cv_sp_inc),
         .SP_DECR(cv_sp_decr),
         .DATA_IN(cv_dx_out),
         .DATA_OUT(sp_data_out)
     );
     
+    wire bc_branch_taken;
+    BRANCH_CALCULATOR my_branch_calculator(
+        .BRANCH_TYPE(cv_branch_type),
+        .C(flg_c),
+        .Z(flg_z),
+        .BRANCH_TAKEN(bc_branch_taken)    
+    );
+    
+    wire [7:0] wb_result;
+    wire [7:0] wb_immed_val;
+    wire [7:0] wb_in;
+    wire [1:0] wb_rf_wr_sel;
+    wire [4:0] wb_reg_addr;
+    wire wb_write;
+    
+    writeback_reg my_writeback_reg(
+        .clk(clk),
+        .in_write(cv_rf_wr),
+        .in_result(alu_result),
+        .in_immed_val(cv_ir),
+        .in_reg_addr(cv_wb_addr),
+        .in_in(in_port),
+        .out_result(wb_result),
+        .out_immed_val(wb_immed_val),
+        .out_in(wb_in),
+        .out_rf_wr_sel(wb_rf_wr_sel),
+        .out_write(wb_write),
+        .out_reg_addr(reg_wr_addr)
+    );
+    
+    pipeline_control my_pipeline_control(
+        .clk(clk),
+        .reg_a(reg_addr_x),
+        .reg_b(reg_addr_y),
+        .reg_wb(wb_reg_addr),
+        .reg_wb_en(wb_write),
+        .reg_ex(cv_wb_addr),
+        .reg_ex_en(cv_rf_wr),
+        .instr_type(cv_branch_type),
+        .branch_taken(bc_branch_taken),
+        .reset(input_reset),
+        .interrupt(input_interrupt),
+        
+        .imem_addr_mux(mem_stall),
+        .fetch_latch_en(fetch_reg_stall),
+        .dec_nop(pipeline_control_nop),
+        .pc_inc(pc_inc),
+        .pc_load(pc_load),
+        .pc_reset(pc_reset)
+    );
+    
+    always_comb begin
+        case(wb_rf_wr_sel)
+            2'h0: reg_data_in <= wb_result;
+            2'h1: reg_data_in <= scr_data_out;
+            2'h2: reg_data_in <= sp_data_out;
+            default: reg_data_in <= wb_in;
+        endcase
+    end
     
     always @ (posedge(clk)) begin
         /* When memory is stalled, delay reg should retain value */
@@ -361,23 +425,23 @@ module writeback_reg(
     input logic [7:0] in_result,
     input logic [7:0] in_immed_val,
     input logic [7:0] in_in,
-    input logic [7:0] in_out,
     input logic [1:0] in_rf_wr_sel,
-    output logic       out_write,
-    output logic [7:0] out_result,
-    output logic [7:0] out_immed_val,
-    output logic [7:0] out_in,
-    output logic [7:0] out_out,
-    output logic [1:0] out_rf_wr_sel
+    input logic [4:0] in_reg_addr,
+    output reg       out_write,
+    output reg [7:0] out_result,
+    output reg [7:0] out_immed_val,
+    output reg [7:0] out_in,
+    output reg [1:0] out_rf_wr_sel,
+    output reg [4:0] out_reg_addr
 );
 
 always @ (posedge clk) begin
   out_write      <= in_write;    
   out_result     <= in_result;    
   out_immed_val  <= in_immed_val; 
-  out_in         <= in_in;        
-  out_out        <= in_out;       
+  out_in         <= in_in;       
   out_rf_wr_sel  <= in_rf_wr_sel;
+  out_reg_addr <= in_reg_addr;
 end
   
 endmodule
