@@ -80,9 +80,36 @@ module pipeline_cpu(
     wire dec_iostrobe;
     wire [3:0] dec_branch_type;
     
+    wire cv_pc_ld;
+    wire cv_pc_inc;
+    wire cv_pc_mux_sel;
+    wire cv_sp_ld;
+    wire cv_sp_incr;
+    wire cv_sp_decr;
+    wire cv_rf_wr;
+    wire [1:0] cv_rf_wr_sel;
+    wire cv_alu_opy_sel;
+    wire [3:0] cv_alu_sel;
+    wire cv_scr_we;
+    wire cv_scr_data_sel;
+    wire [1:0] cv_scr_addr_sel;
+    wire cv_flg_c_set;
+    wire cv_flg_c_clr;
+    wire cv_flg_c_ld;
+    wire cv_flg_z_ld;
+    wire cv_flg_ld_sel;
+    wire cv_flg_shad_ld;
+    wire cv_i_set;
+    wire cv_i_clr;
+    wire cv_iostrobe;
+    wire cv_ir;
+    wire [3:0] cv_branch_type;
+    
     wire pipeline_control_int;
     wire pipeline_control_reset;
+    wire pipeline_control_nop;
     
+    wire [7:0] sp_data_out;
     
     PC my_pc (
         .CLK        (clk),
@@ -96,7 +123,7 @@ module pipeline_cpu(
     );
     
     /* Handles stall cases for prog rom */
-    always_comb @ * begin
+    always_comb begin
         /* TODO: resolve interrupt case for when it happens during delays */
         if (interrupt) begin
             rom_address <= 10'h3FF;
@@ -165,6 +192,157 @@ module pipeline_cpu(
         .IO_STROBE (dec_iostrobe),
         .BRANCH_TYPE (dec_branch_type)
     );
+    
+    control_vector_reg my_ctr_vect_reg(
+        .in_PC_LD(dec_pc_ld),   
+        .in_PC_INC(dec_pc_inc),   
+        .in_PC_MUX_SEL(dec_pc_mux_sel),
+        .in_SP_LD(dec_sp_ld),   
+        .in_SP_INCR(dec_sp_incr),   
+        .in_SP_DECR(dec_sp_decr),   
+        .in_RF_WR(dec_rf_wr),   
+        .in_RF_WR_SEL(dec_rf_wr_sel),   
+        .in_ALU_OPY_SEL(dec_alu_opy_sel),   
+        .in_ALU_SEL(dec_alu_sel),     
+        .in_SCR_WE(dec_scr_we),   
+        .in_SCR_DATA_SE(dec_scr_data_se),   
+        .in_SCR_ADDR_SE(dec_scr_addr_se),
+        .in_FLG_C_SET(dec_flg_c_set),   
+        .in_FLG_C_CLR(dec_flg_c_clr),   
+        .in_FLG_C_LD(dec_flg_c_ld),   
+        .in_FLG_Z_LD(dec_flg_z_ld),   
+        .in_FLG_LD_SEL(dec_flg_ld_sel),   
+        .in_FLG_SHAD_LD(dec_flg_shad_ld),   
+        .in_I_SET(dec_i_set),   
+        .in_I_CLR(dec_i_clr),   
+        .in_IO_STRBE(dec_io_strobe),   
+        .in_BRANCH_TYPE(dec_branch_type), 
+        .in_rst(dec_rst),   
+        .iterupt(pipeline_control_int), // this might be the interupt from control not instruction             
+        .clk(clk),                   
+        .nop(pipeline_control_nop),
+                           
+        .out_PC_LD(cv_pc_ld),   
+        .out_PC_INC(cv_pc_inc),   
+        .out_PC_MUX_SEL(cv_pc_mux_sel),
+        .out_SP_LD(cv_sp_ld),   
+        .out_SP_INCR(cv_sp_incr),   
+        .out_SP_DECR(cv_sp_decr),   
+        .out_RF_WR(cv_rf_wr),   
+        .out_RF_WR_SEL(cv_rf_wr_sel),   
+        .out_ALU_OPY_SEL(cv_alu_opy_sel),   
+        .out_ALU_SEL(cv_alu_sel),     
+        .out_SCR_WE(cv_scr_we),   
+        .out_SCR_DATA_SE(cv_scr_data_se),   
+        .out_SCR_ADDR_SE(cv_scr_addr_se),
+        .out_FLG_C_SET(cv_flg_c_set),   
+        .out_FLG_C_CLR(cv_flg_c_clr),   
+        .out_FLG_C_LD(cv_flg_c_ld),   
+        .out_FLG_Z_LD(cv_flg_z_ld),   
+        .out_FLG_LD_SEL(cv_flg_ld_sel),   
+        .out_FLG_SHAD_LD(cv_flg_shad_ld),   
+        .out_I_SET(cv_i_set),   
+        .out_I_CLR(cv_i_clr),   
+        .out_IO_STRBE(cv_io_strobe),   
+        .out_BRANCH_TYPE(cv_branch_type), 
+        .in_rst(cv_rst),                 
+        .clk(clk),                   
+        .nop(pipeline_control_nop),
+        
+        	// instruction data
+        .in_IR(fetch_instr_out[6:0]),
+        .out_IR (cv_ir),
+        // register values
+        .in_DX (reg_dx_out),
+        .out_DX (cv_dx_out),
+        .in_DY (reg_dy_out),
+        .out_DY (cv_dy_out),
+        // addresses
+        .in_WB_ADDR(reg_addr_x),
+        .out_WB_ADDR (cv_wb_addr),
+        // program counters
+        .in_PC (fetch_addr_out),
+        .out_PC (cv_pc_out)    
+    );
+    
+    wire alu_c;
+    wire alu_b;
+    wire alu_z;
+    wire [7:0] alu_result;
+    
+    wire flg_c;
+    wire flg_z;
+    wire flg_i;
+    
+    Flags my_flags(
+        .CLK(clk),
+        .FLG_C_SET(cv_flg_c_set),
+        .FLG_C_CLR(cv_flg_c_clr),
+        .FLG_C_LD(cv_flg_c_ld),
+        .FLG_Z_LD(cv_z_ld),
+        .FLG_LD_SEL(cv_flg_ld_sel),
+        .FLG_SHAD_LD(cv_flg_shad_ld),
+        .C (alu_c),
+        .Z (alu_z),
+        .C_FLAG (flg_c),
+        .Z_FLAG (flg_z)
+    );
+    
+    I_FLAG my_i_flag(
+        .CLK(clk),
+        .I_SET (cv_i_set),
+        .I_CLR (cv_i_clr),
+        .I_OUT (flg_i)
+    );
+    
+    assign alu_b = (cv_alu_opy_sel == 1'b1) ? cv_ir : cv_dy_out;
+    ALU my_alu(
+        .SEL(cv_alu_sel),
+        .A (cv_out_dx),
+        .B (alu_b),
+        .CIN (flg_c),
+        .C (alu_c),
+        .Z (alu_z),
+        .RESULT(alu_result)
+    );
+    
+    logic [7:0] scr_addr;
+    logic [9:0] scr_data_in;
+    wire [9:0] scr_data_out;
+    
+    wire [8:0] sp_data_out;
+    
+    always_comb begin
+        case (cv_scr_addr_sel)
+            2'h0: scr_addr <= cv_dy_out;
+            2'h1: scr_addr <= cv_ir;
+            2'h2: scr_addr <= sp_data_out;
+            default: scr_addr <= (sp_data_out - 8'b1); // not sure if this works
+        endcase
+    end
+    
+    assign scr_data_in = (cv_scr_data_sel) ? cv_pc_out + 10'h1 : cv_dx_out;
+    
+    SCRATCH_RAM my_scratch_ram(
+        .CLK(clk),
+        .WE(cv_scr_we),
+        .ADDR(cv_scr_addr),
+        .DATA_IN(scr_data_in),
+        .DATA_OUT(scr_data_out)
+    );
+    
+    assign pc_stack_address = scr_data_out;
+    assign pc_immed_address = 0; /* TODO: get actual address from decoder */
+    
+    SP my_sp(
+        .CLK(clk),
+        .SP_LD(cv_sp_ld),
+        .SP_INC(cv_sp_inc),
+        .SP_DECR(cv_sp_decr),
+        .DATA_IN(cv_dx_out),
+        .DATA_OUT(sp_data_out)
+    );
+    
     
     always @ (posedge(clk)) begin
         /* When memory is stalled, delay reg should retain value */
