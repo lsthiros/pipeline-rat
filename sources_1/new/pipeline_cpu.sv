@@ -352,3 +352,32 @@ module pipeline_cpu(
     end
     
 endmodule
+
+
+/* write back reg */
+module writeback_reg(
+    input logic clk,
+    input logic in_write,
+    input logic [7:0] in_result,
+    input logic [7:0] in_immed_val,
+    input logic [7:0] in_in,
+    input logic [7:0] in_out,
+    input logic [1:0] in_rf_wr_sel,
+    output logic       out_write,
+    output logic [7:0] out_result,
+    output logic [7:0] out_immed_val,
+    output logic [7:0] out_in,
+    output logic [7:0] out_out,
+    output logic [1:0] out_rf_wr_sel
+);
+
+always @ (posedge clk) begin
+  out_write      <= in_write;    
+  out_result     <= in_result;    
+  out_immed_val  <= in_immed_val; 
+  out_in         <= in_in;        
+  out_out        <= in_out;       
+  out_rf_wr_sel  <= in_rf_wr_sel;
+end
+  
+endmodule
