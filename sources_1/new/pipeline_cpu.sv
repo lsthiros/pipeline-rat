@@ -225,9 +225,9 @@ module pipeline_cpu(
         .in_FLG_SHAD_LD(dec_flg_shad_ld),   
         .in_I_SET(dec_i_set),   
         .in_I_CLR(dec_i_clr),   
-        .in_IO_STRB(dec_io_strobe),   
+        .in_IO_STRB(dec_iostrobe),   
         .in_BRANCH_TYPE(dec_branch_type), 
-        .in_rst(dec_rst),   
+        .in_rst(rst),   
         .interupt(pipeline_control_int), // this might be the interupt from control not instruction             
         .clk(clk),                   
         .nop(pipeline_control_nop),
@@ -253,7 +253,7 @@ module pipeline_cpu(
         .out_FLG_SHAD_LD(cv_flg_shad_ld),   
         .out_I_SET(cv_i_set),   
         .out_I_CLR(cv_i_clr),   
-        .out_IO_STRB(cv_io_strobe),   
+        .out_IO_STRB(io_strb),   
         .out_BRANCH_TYPE(cv_branch_type),
         
         	// instruction data
@@ -274,8 +274,7 @@ module pipeline_cpu(
         .in_dest_addr(fetch_instr_out[12:3]),
         .out_dest_addr(cv_dest_addr)
     );
-    
-    assign io_strb = cv_io_strobe;
+
     assign port_id = cv_ir;
     assign out_port = cv_dx_out;
     
@@ -293,7 +292,7 @@ module pipeline_cpu(
         .FLG_C_SET(cv_flg_c_set),
         .FLG_C_CLR(cv_flg_c_clr),
         .FLG_C_LD(cv_flg_c_ld),
-        .FLG_Z_LD(cv_z_ld),
+        .FLG_Z_LD(cv_flg_z_ld),
         .FLG_LD_SEL(cv_flg_ld_sel),
         .FLG_SHAD_LD(cv_flg_shad_ld),
         .C (alu_c),
@@ -349,7 +348,7 @@ module pipeline_cpu(
     SP my_sp(
         .CLK(clk),
         .SP_LD(cv_sp_ld),
-        .SP_INCR(cv_sp_inc),
+        .SP_INCR(cv_sp_incr),
         .SP_DECR(cv_sp_decr),
         .DATA_IN(cv_dx_out),
         .DATA_OUT(sp_data_out)
@@ -395,7 +394,7 @@ module pipeline_cpu(
         .reg_ex_en(cv_rf_wr),
         .instr_type(cv_branch_type),
         .branch_taken(bc_branch_taken),
-        .reset(input_reset),
+        .reset(rst),
         .interrupt(input_interrupt),
         
         .imem_addr_mux(mem_stall),
