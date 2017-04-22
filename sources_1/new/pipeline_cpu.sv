@@ -43,7 +43,7 @@ module pipeline_cpu(
     wire mem_stall;
     
     /* Register should always contain address that is out on memory line */
-    reg [9:0] pc_delay;
+    reg [9:0] pc_delay = 0;
     
     logic [9:0] rom_address;
     wire [17:0] rom_instr;
@@ -137,7 +137,7 @@ module pipeline_cpu(
     always_comb begin
         /* TODO: resolve interrupt case for when it happens during delays */
         if (interrupt) begin
-            rom_address <= 10'h3FF;
+            rom_address <= 10'h3F;
         end
         else if (mem_stall) begin
             rom_address <= pc_delay;
@@ -154,6 +154,7 @@ module pipeline_cpu(
     );
     
     fetch_reg my_fetch_reg(
+        .rst      (rst),
         .clk      (clk),
         .instr    (rom_instr),
         .addr     (pc_delay),
@@ -162,10 +163,13 @@ module pipeline_cpu(
         .instr_out (fetch_instr_out)
     );
     
+    assign reg_addr_x = fetch_instr_out[12:8];
+    assign reg_addr_y = fetch_instr_out[7:3];
+    
     RegisterFile my_reg_file(
         .CLK (clk),
-        .ADRX (fetch_instr_out[12:8]),
-        .ADRY (fetch_instr_out[7:3]),
+        .ADRX (reg_addr_x),
+        .ADRY (reg_addr_y),
         .WR_ADR (reg_wr_addr),
         .DX_OUT (reg_dx_out),
         .DY_OUT (reg_dy_out),
@@ -346,6 +350,7 @@ module pipeline_cpu(
     assign pc_immed_address = 0; /* TODO: get actual address from decoder */
     
     SP my_sp(
+        .RST(rst),
         .CLK(clk),
         .SP_LD(cv_sp_ld),
         .SP_INCR(cv_sp_incr),
@@ -370,6 +375,7 @@ module pipeline_cpu(
     wire wb_write;
     
     writeback_reg my_writeback_reg(
+        .rst(rst),
         .clk(clk),
         .in_write(cv_rf_wr),
         .in_result(alu_result),
@@ -398,7 +404,7 @@ module pipeline_cpu(
         .interrupt(input_interrupt),
         
         .imem_addr_mux(mem_stall),
-        .fetch_latch_en(fetch_reg_stall),
+        .fetch_latch_stall(fetch_reg_stall),
         .dec_nop(pipeline_control_nop),
         .pc_inc(pc_inc),
         .pc_load(pc_load),
@@ -426,6 +432,7 @@ endmodule
 
 /* write back reg */
 module writeback_reg(
+    input rst,
     input logic clk,
     input logic in_write,
     input logic [7:0] in_result,
@@ -442,12 +449,22 @@ module writeback_reg(
 );
 
 always @ (posedge clk) begin
-  out_write      <= in_write;    
-  out_result     <= in_result;    
-  out_immed_val  <= in_immed_val; 
-  out_in         <= in_in;       
-  out_rf_wr_sel  <= in_rf_wr_sel;
-  out_reg_addr <= in_reg_addr;
+  if (rst) begin
+    out_write      <= 0;    
+    out_result     <= 0;    
+    out_immed_val  <= 0; 
+    out_in         <= 0;       
+    out_rf_wr_sel  <= 0;
+    out_reg_addr <= 0;
+  end
+  else begin
+      out_write      <= in_write;    
+      out_result     <= in_result;    
+      out_immed_val  <= in_immed_val; 
+      out_in         <= in_in;       
+      out_rf_wr_sel  <= in_rf_wr_sel;
+      out_reg_addr <= in_reg_addr;
+  end
 end
   
 endmodule

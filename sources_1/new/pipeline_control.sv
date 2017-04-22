@@ -33,7 +33,7 @@ module pipeline_control(
     input reset,
     input interrupt,
     output imem_addr_mux,
-    output fetch_latch_en,
+    output fetch_latch_stall,
     output dec_nop,
     output pc_inc,
     output pc_load,
@@ -42,7 +42,7 @@ module pipeline_control(
     
     typedef enum {CHECK, CALL, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, RESET0, RESET1, RETURN0, RETURN1} HazardState;
     
-    reg [3:0] current_state;
+    reg [3:0] current_state = 0;
     HazardState nextState = CHECK;
     
     wire raw_ex = ((reg_a == reg_ex) || (reg_b == reg_ex)) && reg_ex_en;
@@ -58,12 +58,13 @@ module pipeline_control(
         || (return_det || current_state == RETURN0 || current_state == RETURN1);
     assign pc_stall = (raw_ex || current_state == RAW_EX || raw_wb);
     assign mem_stall = pc_stall;
+    assign fetch_latch_stall = pc_stall; /*was fetch_reg_stall*/
     assign pc_reset = reset;
-    assign pc_inc = (interrupt && !reset && !branch_taken);
+    assign pc_inc = (!pc_reset && !pc_load && !pc_stall);
     assign pc_load = branch_taken;
     assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9) || instr_type == 4'h6;
     assign branch_miss = (instr_type == 4'h1 || instr_type == 4'h2 || instr_type == 4'h3 || instr_type == 4'h4 || instr_type == 4'h5);
-    
+    assign imem_addr_mux = pc_stall;
     
     
     always_comb
@@ -93,6 +94,9 @@ module pipeline_control(
         end
         else if (current_state == RAW_EX) begin
             nextState <= CHECK;
+        end
+        else if (current_state == RESET0) begin
+            nextState <= RESET1;
         end
         else if (current_state == RESET1) begin
             nextState <= CHECK;
