@@ -55,7 +55,8 @@ module pipeline_control(
     
     assign dec_nop = (branch_miss || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
         || (interrupt || current_state == INT0 || current_state == INT1)
-        || (return_det || current_state == RETURN0 || current_state == RETURN1);
+        || (return_det || current_state == RETURN0 || current_state == RETURN1)
+        || (current_state == RESET0 || current_state == RESET1);
     assign pc_stall = (raw_ex || current_state == RAW_EX || raw_wb);
     assign mem_stall = pc_stall;
     assign fetch_latch_stall = pc_stall; /*was fetch_reg_stall*/

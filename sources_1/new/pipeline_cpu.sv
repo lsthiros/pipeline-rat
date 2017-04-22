@@ -371,12 +371,11 @@ module pipeline_cpu(
     wire [7:0] wb_immed_val;
     wire [7:0] wb_in;
     wire [1:0] wb_rf_wr_sel;
-    wire [4:0] wb_reg_addr;
-    wire wb_write;
     
     writeback_reg my_writeback_reg(
         .rst(rst),
         .clk(clk),
+        .in_rf_wr_sel(cv_rf_wr_sel),
         .in_write(cv_rf_wr),
         .in_result(alu_result),
         .in_immed_val(cv_ir),
@@ -386,7 +385,7 @@ module pipeline_cpu(
         .out_immed_val(wb_immed_val),
         .out_in(wb_in),
         .out_rf_wr_sel(wb_rf_wr_sel),
-        .out_write(wb_write),
+        .out_write(reg_wr_en),
         .out_reg_addr(reg_wr_addr)
     );
     
@@ -394,8 +393,8 @@ module pipeline_cpu(
         .clk(clk),
         .reg_a(reg_addr_x),
         .reg_b(reg_addr_y),
-        .reg_wb(wb_reg_addr),
-        .reg_wb_en(wb_write),
+        .reg_wb(reg_wr_addr),
+        .reg_wb_en(reg_wr_en),
         .reg_ex(cv_wb_addr),
         .reg_ex_en(cv_rf_wr),
         .instr_type(cv_branch_type),

@@ -66,6 +66,7 @@ uut: pipeline_cpu
    -- verify memory
    VERIFY_process :process
    begin
+      INT_IN_tb <= '0';
       RST_tb <= '1';
       wait for 10 ns;
       RST_tb <= '0';
