@@ -73,6 +73,7 @@ module control_vector_reg(
     output logic out_IO_STRB      ,
     output logic[3:0] out_BRANCH_TYPE  ,
     output logic out_rst          ,
+    output logic [9:0] out_dest_addr,
 
     input logic in_PC_LD        ,
     input logic in_PC_INC       ,
@@ -98,6 +99,7 @@ module control_vector_reg(
     input logic in_IO_STRB      ,
     input logic[3:0] in_BRANCH_TYPE  ,
     input logic in_rst          ,
+    input logic [9:0] in_dest_addr,
 	input logic interupt,
 	input logic clk,
 	input logic nop,
@@ -126,9 +128,34 @@ always @ (posedge clk) begin
 	out_DY = in_DY;
 	out_WB_ADDR = in_WB_ADDR;
 	out_PC = in_PC;
-	
-//// when nop
-if(interupt == 1'b1) begin
+	out_dest_addr <= in_dest_addr;
+
+if (in_rst) begin
+    out_PC_LD       <= 0;
+    out_PC_INC      <= 0;
+    out_PC_MUX_SEL  <= "00";
+    out_SP_LD       <= 0;
+    out_SP_INCR     <= 0;
+    out_SP_DECR     <= 0;
+    out_RF_WR       <= 0;
+    out_RF_WR_SEL   <= "00";
+    out_ALU_OPY_SEL <= 0;
+    out_ALU_SEL     <= "0000";
+    out_SCR_WE      <= 0;
+    out_SCR_DATA_SE <= 0;
+    out_SCR_ADDR_SE <= 0;
+    out_FLG_C_SET   <= 0;
+    out_FLG_C_CLR   <= 0;
+    out_FLG_C_LD    <= 0;
+    out_FLG_Z_LD    <= 0;
+    out_FLG_LD_SEL  <= 0;
+    out_FLG_SHAD_LD <= 0;
+    out_I_SET       <= 0;
+    out_I_CLR       <= 0;
+    out_IO_STRB     <= 0;
+    out_BRANCH_TYPE <= "0000";
+end
+else if(interupt == 1'b1) begin
 	out_PC_LD       <= 0;
 	out_PC_INC      <= 0;
 	out_PC_MUX_SEL  <= "00";
@@ -153,7 +180,7 @@ if(interupt == 1'b1) begin
 	out_IO_STRB     <= 0;
 	out_BRANCH_TYPE <= "0000";
 	out_rst         <= 0;
-
+// When nop
 end else if(nop == 1'b0) begin
 	out_PC_LD       <= in_PC_LD        ;
     out_PC_INC      <= in_PC_INC       ;

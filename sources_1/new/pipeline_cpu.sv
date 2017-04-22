@@ -37,13 +37,13 @@ module pipeline_cpu(
     wire pc_load;
     wire pc_inc;
     wire pc_reset;
-    wire pc_mux_sel;
-    wire pc_count;
+    wire [1:0] pc_mux_sel;
+    wire [9:0] pc_count;
     
     wire mem_stall;
     
     /* Register should always contain address that is out on memory line */
-    reg [9:0] pc_delay;
+    reg [9:0] pc_delay = 0;
     
     logic [9:0] rom_address;
     wire [17:0] rom_instr;
@@ -64,7 +64,7 @@ module pipeline_cpu(
     
     wire dec_pc_ld;
     wire dec_pc_inc;
-    wire dec_pc_mux_sel;
+    wire [1:0] dec_pc_mux_sel;
     wire dec_sp_ld;
     wire dec_sp_incr;
     wire dec_sp_decr;
@@ -88,7 +88,7 @@ module pipeline_cpu(
     
     wire cv_pc_ld;
     wire cv_pc_inc;
-    wire cv_pc_mux_sel;
+    wire [1:0] cv_pc_mux_sel;
     wire cv_sp_ld;
     wire cv_sp_incr;
     wire cv_sp_decr;
@@ -99,6 +99,8 @@ module pipeline_cpu(
     wire cv_scr_we;
     wire cv_scr_data_sel;
     wire [1:0] cv_scr_addr_sel;
+    wire [7:0] cv_dx_out;
+    wire [7:0] cv_dy_out;
     wire cv_flg_c_set;
     wire cv_flg_c_clr;
     wire cv_flg_c_ld;
@@ -108,8 +110,11 @@ module pipeline_cpu(
     wire cv_i_set;
     wire cv_i_clr;
     wire cv_iostrobe;
-    wire cv_ir;
+    wire [7:0] cv_ir;
     wire [3:0] cv_branch_type;
+    wire [4:0] cv_wb_addr;
+    wire [9:0] cv_dest_addr;
+    wire [9:0] cv_pc_out;
     
     wire pipeline_control_int;
     wire pipeline_control_reset;
@@ -132,7 +137,7 @@ module pipeline_cpu(
     always_comb begin
         /* TODO: resolve interrupt case for when it happens during delays */
         if (interrupt) begin
-            rom_address <= 10'h3FF;
+            rom_address <= 10'h3F;
         end
         else if (mem_stall) begin
             rom_address <= pc_delay;
@@ -149,6 +154,7 @@ module pipeline_cpu(
     );
     
     fetch_reg my_fetch_reg(
+        .rst      (rst),
         .clk      (clk),
         .instr    (rom_instr),
         .addr     (pc_delay),
@@ -157,10 +163,13 @@ module pipeline_cpu(
         .instr_out (fetch_instr_out)
     );
     
+    assign reg_addr_x = fetch_instr_out[12:8];
+    assign reg_addr_y = fetch_instr_out[7:3];
+    
     RegisterFile my_reg_file(
         .CLK (clk),
-        .ADRX (fetch_instr_out[12:8]),
-        .ADRY (fetch_instr_out[7:3]),
+        .ADRX (reg_addr_x),
+        .ADRY (reg_addr_y),
         .WR_ADR (reg_wr_addr),
         .DX_OUT (reg_dx_out),
         .DY_OUT (reg_dy_out),
@@ -210,8 +219,8 @@ module pipeline_cpu(
         .in_ALU_OPY_SEL(dec_alu_opy_sel),   
         .in_ALU_SEL(dec_alu_sel),     
         .in_SCR_WE(dec_scr_we),   
-        .in_SCR_DATA_SE(dec_scr_data_se),   
-        .in_SCR_ADDR_SE(dec_scr_addr_se),
+        .in_SCR_DATA_SE(dec_scr_data_sel),   
+        .in_SCR_ADDR_SE(dec_scr_addr_sel),
         .in_FLG_C_SET(dec_flg_c_set),   
         .in_FLG_C_CLR(dec_flg_c_clr),   
         .in_FLG_C_LD(dec_flg_c_ld),   
@@ -220,9 +229,9 @@ module pipeline_cpu(
         .in_FLG_SHAD_LD(dec_flg_shad_ld),   
         .in_I_SET(dec_i_set),   
         .in_I_CLR(dec_i_clr),   
-        .in_IO_STRB(dec_io_strobe),   
+        .in_IO_STRB(dec_iostrobe),   
         .in_BRANCH_TYPE(dec_branch_type), 
-        .in_rst(dec_rst),   
+        .in_rst(rst),   
         .interupt(pipeline_control_int), // this might be the interupt from control not instruction             
         .clk(clk),                   
         .nop(pipeline_control_nop),
@@ -238,8 +247,8 @@ module pipeline_cpu(
         .out_ALU_OPY_SEL(cv_alu_opy_sel),   
         .out_ALU_SEL(cv_alu_sel),     
         .out_SCR_WE(cv_scr_we),   
-        .out_SCR_DATA_SE(cv_scr_data_se),   
-        .out_SCR_ADDR_SE(cv_scr_addr_se),
+        .out_SCR_DATA_SE(cv_scr_data_sel),   
+        .out_SCR_ADDR_SE(cv_scr_addr_sel),
         .out_FLG_C_SET(cv_flg_c_set),   
         .out_FLG_C_CLR(cv_flg_c_clr),   
         .out_FLG_C_LD(cv_flg_c_ld),   
@@ -248,7 +257,7 @@ module pipeline_cpu(
         .out_FLG_SHAD_LD(cv_flg_shad_ld),   
         .out_I_SET(cv_i_set),   
         .out_I_CLR(cv_i_clr),   
-        .out_IO_STRB(cv_io_strobe),   
+        .out_IO_STRB(io_strb),   
         .out_BRANCH_TYPE(cv_branch_type),
         
         	// instruction data
@@ -264,16 +273,17 @@ module pipeline_cpu(
         .out_WB_ADDR (cv_wb_addr),
         // program counters
         .in_PC (fetch_addr_out),
-        .out_PC (cv_pc_out)    
+        .out_PC (cv_pc_out),
+        
+        .in_dest_addr(fetch_instr_out[12:3]),
+        .out_dest_addr(cv_dest_addr)
     );
-    
-    assign io_strb = cv_io_strobe;
+
     assign port_id = cv_ir;
     assign out_port = cv_dx_out;
     
-    
     wire alu_c;
-    wire alu_b;
+    wire [7:0] alu_b;
     wire alu_z;
     wire [7:0] alu_result;
     
@@ -286,7 +296,7 @@ module pipeline_cpu(
         .FLG_C_SET(cv_flg_c_set),
         .FLG_C_CLR(cv_flg_c_clr),
         .FLG_C_LD(cv_flg_c_ld),
-        .FLG_Z_LD(cv_z_ld),
+        .FLG_Z_LD(cv_flg_z_ld),
         .FLG_LD_SEL(cv_flg_ld_sel),
         .FLG_SHAD_LD(cv_flg_shad_ld),
         .C (alu_c),
@@ -305,7 +315,7 @@ module pipeline_cpu(
     assign alu_b = (cv_alu_opy_sel == 1'b1) ? cv_ir : cv_dy_out;
     ALU my_alu(
         .SEL(cv_alu_sel),
-        .A (cv_out_dx),
+        .A (cv_dx_out),
         .B (alu_b),
         .CIN (flg_c),
         .C (alu_c),
@@ -331,7 +341,7 @@ module pipeline_cpu(
     SCRATCH_RAM my_scratch_ram(
         .CLK(clk),
         .WE(cv_scr_we),
-        .ADDR(cv_scr_addr),
+        .ADDR(cv_ir[7:0]),
         .DATA_IN(scr_data_in),
         .DATA_OUT(scr_data_out)
     );
@@ -340,9 +350,10 @@ module pipeline_cpu(
     assign pc_immed_address = 0; /* TODO: get actual address from decoder */
     
     SP my_sp(
+        .RST(rst),
         .CLK(clk),
         .SP_LD(cv_sp_ld),
-        .SP_INCR(cv_sp_inc),
+        .SP_INCR(cv_sp_incr),
         .SP_DECR(cv_sp_decr),
         .DATA_IN(cv_dx_out),
         .DATA_OUT(sp_data_out)
@@ -364,6 +375,7 @@ module pipeline_cpu(
     wire wb_write;
     
     writeback_reg my_writeback_reg(
+        .rst(rst),
         .clk(clk),
         .in_write(cv_rf_wr),
         .in_result(alu_result),
@@ -388,11 +400,11 @@ module pipeline_cpu(
         .reg_ex_en(cv_rf_wr),
         .instr_type(cv_branch_type),
         .branch_taken(bc_branch_taken),
-        .reset(input_reset),
+        .reset(rst),
         .interrupt(input_interrupt),
         
         .imem_addr_mux(mem_stall),
-        .fetch_latch_en(fetch_reg_stall),
+        .fetch_latch_stall(fetch_reg_stall),
         .dec_nop(pipeline_control_nop),
         .pc_inc(pc_inc),
         .pc_load(pc_load),
@@ -420,6 +432,7 @@ endmodule
 
 /* write back reg */
 module writeback_reg(
+    input rst,
     input logic clk,
     input logic in_write,
     input logic [7:0] in_result,
@@ -436,12 +449,22 @@ module writeback_reg(
 );
 
 always @ (posedge clk) begin
-  out_write      <= in_write;    
-  out_result     <= in_result;    
-  out_immed_val  <= in_immed_val; 
-  out_in         <= in_in;       
-  out_rf_wr_sel  <= in_rf_wr_sel;
-  out_reg_addr <= in_reg_addr;
+  if (rst) begin
+    out_write      <= 0;    
+    out_result     <= 0;    
+    out_immed_val  <= 0; 
+    out_in         <= 0;       
+    out_rf_wr_sel  <= 0;
+    out_reg_addr <= 0;
+  end
+  else begin
+      out_write      <= in_write;    
+      out_result     <= in_result;    
+      out_immed_val  <= in_immed_val; 
+      out_in         <= in_in;       
+      out_rf_wr_sel  <= in_rf_wr_sel;
+      out_reg_addr <= in_reg_addr;
+  end
 end
   
 endmodule
