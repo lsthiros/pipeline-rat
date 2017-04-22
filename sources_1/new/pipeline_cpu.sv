@@ -242,7 +242,7 @@ module pipeline_cpu(
                            
         .out_PC_LD(cv_pc_ld),   
         .out_PC_INC(cv_pc_inc),   
-        .out_PC_MUX_SEL(cv_pc_mux_sel),
+        .out_PC_MUX_SEL(pc_mux_sel),
         .out_SP_LD(cv_sp_ld),   
         .out_SP_INCR(cv_sp_incr),   
         .out_SP_DECR(cv_sp_decr),   
@@ -351,7 +351,7 @@ module pipeline_cpu(
     );
     
     assign pc_stack_address = scr_data_out;
-    assign pc_immed_address = 0; /* TODO: get actual address from decoder */
+    assign pc_immed_address = cv_dest_addr;
     
     SP my_sp(
         .RST(rst),

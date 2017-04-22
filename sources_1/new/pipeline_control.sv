@@ -44,7 +44,7 @@ module pipeline_control(
     
     typedef enum {CHECK, CALL, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, RESET0, RESET1, RETURN0, RETURN1} HazardState;
     
-    reg [3:0] current_state = 0;
+    HazardState current_state = CHECK;
     HazardState nextState = CHECK;
     
     wire raw_ex = ((reg_a == reg_ex) && a_read || (reg_b == reg_ex) && b_read) && reg_ex_en;
