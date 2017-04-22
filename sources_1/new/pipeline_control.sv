@@ -32,6 +32,8 @@ module pipeline_control(
     input branch_taken,
     input reset,
     input interrupt,
+    input a_read,
+    input b_read,
     output imem_addr_mux,
     output fetch_latch_stall,
     output dec_nop,
@@ -45,8 +47,8 @@ module pipeline_control(
     reg [3:0] current_state = 0;
     HazardState nextState = CHECK;
     
-    wire raw_ex = ((reg_a == reg_ex) || (reg_b == reg_ex)) && reg_ex_en;
-    wire raw_wb = ((reg_a == reg_wb) || (reg_b == reg_wb)) && reg_wb_en;
+    wire raw_ex = ((reg_a == reg_ex) && a_read || (reg_b == reg_ex) && b_read) && reg_ex_en;
+    wire raw_wb = ((reg_a == reg_wb) && a_read || (reg_b == reg_wb) && b_read) && reg_wb_en;
     wire call_det;
     wire branch_miss;
     wire pc_stall;
@@ -71,51 +73,56 @@ module pipeline_control(
     always_comb
     begin
         if (reset) begin
-            nextState <= RESET0;
-        end
-        if (interrupt) begin
-            nextState <= INT0;
-        end
-        else if(current_state == CHECK) begin
-            if (raw_ex) begin
-                nextState <= RAW_EX;
-            end
-            else if (branch_miss) begin
-                nextState <= BRANCH_MIS0;
-            end
-            else if (return_det) begin
-                nextState <= RETURN0;
-            end
-        end
-        else if (current_state == BRANCH_MIS0) begin
-            nextState <= BRANCH_MIS1;
-        end
-        else if (current_state == BRANCH_MIS1) begin
-            nextState <= CHECK;
-        end
-        else if (current_state == RAW_EX) begin
-            nextState <= CHECK;
-        end
-        else if (current_state == RESET0) begin
-            nextState <= RESET1;
-        end
-        else if (current_state == RESET1) begin
-            nextState <= CHECK;
-        end
-        else if (current_state == INT0) begin
-            nextState <= INT1;
-        end
-        else if (current_state == INT1) begin
-            nextState <= CHECK;
-        end
-        else if (current_state == RETURN0) begin
-            nextState <= RETURN1;
-        end
-        else if (current_state == RETURN1) begin
-            nextState <= CHECK;
+            nextState = RESET0;
         end
         else begin
-            nextState <= CHECK;
+            if (interrupt) begin
+                nextState = INT0;
+            end
+            else if(current_state == CHECK) begin
+                if (raw_ex) begin
+                    nextState = RAW_EX;
+                end
+                else if (branch_miss) begin
+                    nextState = BRANCH_MIS0;
+                end
+                else if (return_det) begin
+                    nextState = RETURN0;
+                end
+                else begin
+                    nextState = CHECK;
+                end
+            end
+            else if (current_state == BRANCH_MIS0) begin
+                nextState = BRANCH_MIS1;
+            end
+            else if (current_state == BRANCH_MIS1) begin
+                nextState = CHECK;
+            end
+            else if (current_state == RAW_EX) begin
+                nextState = CHECK;
+            end
+            else if (current_state == RESET0) begin
+                nextState = RESET1;
+            end
+            else if (current_state == RESET1) begin
+                nextState = CHECK;
+            end
+            else if (current_state == INT0) begin
+                nextState = INT1;
+            end
+            else if (current_state == INT1) begin
+                nextState = CHECK;
+            end
+            else if (current_state == RETURN0) begin
+                nextState = RETURN1;
+            end
+            else if (current_state == RETURN1) begin
+                nextState = CHECK;
+            end
+            else begin
+                nextState = CHECK;
+            end
         end
     end
     

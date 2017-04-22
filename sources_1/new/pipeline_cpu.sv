@@ -119,6 +119,8 @@ module pipeline_cpu(
     wire pipeline_control_int;
     wire pipeline_control_reset;
     wire pipeline_control_nop;
+    wire pipeline_control_a_read;
+    wire pipeline_control_b_read;
     
     wire [7:0] sp_data_out;
     
@@ -204,7 +206,9 @@ module pipeline_cpu(
         .I_SET(dec_i_set),
         .I_CLR(dec_i_clr),
         .IO_STRB (dec_iostrobe),
-        .BRANCH_TYPE (dec_branch_type)
+        .BRANCH_TYPE (dec_branch_type),
+        .REG_X_READ(pipeline_control_a_read),
+        .REG_Y_READ(pipeline_control_b_read)
     );
     
     control_vector_reg my_ctr_vect_reg(
@@ -407,7 +411,9 @@ module pipeline_cpu(
         .dec_nop(pipeline_control_nop),
         .pc_inc(pc_inc),
         .pc_load(pc_load),
-        .pc_reset(pc_reset)
+        .pc_reset(pc_reset),
+        .a_read(pipeline_control_a_read),
+        .b_read(pipeline_control_b_read)
     );
     
     always_comb begin

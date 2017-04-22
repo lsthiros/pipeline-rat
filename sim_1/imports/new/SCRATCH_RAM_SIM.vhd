@@ -71,9 +71,9 @@ uut: pipeline_cpu
       wait for 10 ns;
       RST_tb <= '0';
       wait for 360 ns;    
-      INT_IN_tb <= '1';
+      INT_IN_tb <= '0';
       wait for 30 ns;
       INT_IN_tb <= '0';
-      wait for 1000 ns;           
+      wait for 1000 ns;         
    end process VERIFY_process;
 END;

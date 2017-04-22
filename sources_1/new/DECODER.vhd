@@ -374,7 +374,7 @@ case op is
 		SCR_DATA_SEL <= '0';
 		SCR_WE       <= '1';
 		SCR_ADDR_SEL <= "01"; 
-		EG_X_READ <= '0';
+		REG_X_READ <= '0';
 		REG_Y_READ <= '0';
 	when "0000110" => -- SUB RR
 		RF_WR        <= '1';
@@ -384,7 +384,7 @@ case op is
 		FLG_LD_SEL   <= '0';
 		FLG_C_LD     <= '1';
 		FLG_Z_LD     <= '1';
-		EG_X_READ <= '1';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '1';
 	when "1011000" | "1011001" | "1011010" | "1011011" => -- SUB RI
 		RF_WR        <= '1';
@@ -394,7 +394,7 @@ case op is
 		FLG_LD_SEL   <= '0';
 		FLG_C_LD     <= '1';
 		FLG_Z_LD     <= '1';
-		EG_X_READ <= '1';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '0';
 	when "0000111" => -- SUBC RR
 		RF_WR        <= '1';
@@ -404,7 +404,7 @@ case op is
 		FLG_LD_SEL   <= '0';
 		FLG_C_LD     <= '1';
 		FLG_Z_LD     <= '1';
-		EG_X_READ <= '1';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '1';
 	when "1011100" | "1011101" | "1011110" | "1011111" => -- SUBC RI
 		RF_WR        <= '1';
@@ -414,7 +414,7 @@ case op is
 		FLG_LD_SEL   <= '0';
 		FLG_C_LD     <= '1';
 		FLG_Z_LD     <= '1';
-		EG_X_READ <= '1';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '0';
 	when "0000011" => -- TEST RR
 		RF_WR        <= '0';
@@ -423,7 +423,7 @@ case op is
 		FLG_LD_SEL   <= '0';
 		FLG_C_CLR    <= '1';
 		FLG_Z_LD     <= '1';
-		EG_X_READ <= '1';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '1';
 	when "1001100" | "1001101" | "1001110" | "1001111" => -- TEST RI
 		RF_WR        <= '0';
@@ -432,11 +432,11 @@ case op is
 		FLG_LD_SEL   <= '0';
 		FLG_C_CLR    <= '1';
 		FLG_Z_LD     <= '1';
-		EG_X_READ <= '1';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '0';
 	when "0101000" => -- WSP
 		SP_LD        <= '1';
-		EG_X_READ <= '1';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '0';
 	when others =>
 		PC_INC        <= '0';   PC_MUX_SEL    <= "00";   PC_LD       <= '0';
