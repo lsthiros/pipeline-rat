@@ -83,13 +83,9 @@ module pipeline_cpu(
     wire dec_flg_shad_ld;
     wire dec_i_set;
     wire dec_i_clr;
-    wire dec_io_strobe;
+    wire dec_iostrobe;
     wire [3:0] dec_branch_type;
-	wire dec_rst;
-	wire [7:0] cv_dx_out;
-    wire [7:0] cv_dy_out;
-	
-	
+    
     wire cv_pc_ld;
     wire cv_pc_inc;
     wire cv_pc_mux_sel;
@@ -111,12 +107,9 @@ module pipeline_cpu(
     wire cv_flg_shad_ld;
     wire cv_i_set;
     wire cv_i_clr;
-    wire cv_io_strobe;
-    wire [7:0]cv_ir;
+    wire cv_iostrobe;
+    wire cv_ir;
     wire [3:0] cv_branch_type;
-	wire [4:0] cv_wb_addr;
-	wire [9:0] cv_pc_out;
-	
     
     wire pipeline_control_int;
     wire pipeline_control_reset;
@@ -201,9 +194,8 @@ module pipeline_cpu(
         .FLG_SHAD_LD (dec_flg_shad_ld),
         .I_SET(dec_i_set),
         .I_CLR(dec_i_clr),
-        .IO_STRB (dec_io_strobe),
-        .BRANCH_TYPE (dec_branch_type),
-		.RST(dec_rst)
+        .IO_STRB (dec_iostrobe),
+        .BRANCH_TYPE (dec_branch_type)
     );
     
     control_vector_reg my_ctr_vect_reg(
@@ -219,7 +211,7 @@ module pipeline_cpu(
         .in_ALU_SEL(dec_alu_sel),     
         .in_SCR_WE(dec_scr_we),   
         .in_SCR_DATA_SE(dec_scr_data_se),   
-        .in_SCR_ADDR_SE(dec_scr_addr_sel),
+        .in_SCR_ADDR_SE(dec_scr_addr_se),
         .in_FLG_C_SET(dec_flg_c_set),   
         .in_FLG_C_CLR(dec_flg_c_clr),   
         .in_FLG_C_LD(dec_flg_c_ld),   
@@ -246,8 +238,8 @@ module pipeline_cpu(
         .out_ALU_OPY_SEL(cv_alu_opy_sel),   
         .out_ALU_SEL(cv_alu_sel),     
         .out_SCR_WE(cv_scr_we),   
-        .out_SCR_DATA_SE(cv_scr_data_sel),   
-        .out_SCR_ADDR_SE(cv_scr_addr_sel),
+        .out_SCR_DATA_SE(cv_scr_data_se),   
+        .out_SCR_ADDR_SE(cv_scr_addr_se),
         .out_FLG_C_SET(cv_flg_c_set),   
         .out_FLG_C_CLR(cv_flg_c_clr),   
         .out_FLG_C_LD(cv_flg_c_ld),   
@@ -266,7 +258,7 @@ module pipeline_cpu(
         .in_DX (reg_dx_out),
         .out_DX (cv_dx_out),
         .in_DY (reg_dy_out),
-        .out_DY (cv_dy_out), 
+        .out_DY (cv_dy_out),
         // addresses
         .in_WB_ADDR(reg_addr_x),
         .out_WB_ADDR (cv_wb_addr),
@@ -294,7 +286,7 @@ module pipeline_cpu(
         .FLG_C_SET(cv_flg_c_set),
         .FLG_C_CLR(cv_flg_c_clr),
         .FLG_C_LD(cv_flg_c_ld),
-        .FLG_Z_LD(cv_flg_z_ld),
+        .FLG_Z_LD(cv_z_ld),
         .FLG_LD_SEL(cv_flg_ld_sel),
         .FLG_SHAD_LD(cv_flg_shad_ld),
         .C (alu_c),
@@ -313,7 +305,7 @@ module pipeline_cpu(
     assign alu_b = (cv_alu_opy_sel == 1'b1) ? cv_ir : cv_dy_out;
     ALU my_alu(
         .SEL(cv_alu_sel),
-        .A (cv_dx_out),
+        .A (cv_out_dx),
         .B (alu_b),
         .CIN (flg_c),
         .C (alu_c),
@@ -339,7 +331,7 @@ module pipeline_cpu(
     SCRATCH_RAM my_scratch_ram(
         .CLK(clk),
         .WE(cv_scr_we),
-        .ADDR(scr_addr),
+        .ADDR(cv_scr_addr),
         .DATA_IN(scr_data_in),
         .DATA_OUT(scr_data_out)
     );
@@ -350,7 +342,7 @@ module pipeline_cpu(
     SP my_sp(
         .CLK(clk),
         .SP_LD(cv_sp_ld),
-        .SP_INCR(cv_sp_incr),
+        .SP_INCR(cv_sp_inc),
         .SP_DECR(cv_sp_decr),
         .DATA_IN(cv_dx_out),
         .DATA_OUT(sp_data_out)
@@ -396,7 +388,7 @@ module pipeline_cpu(
         .reg_ex_en(cv_rf_wr),
         .instr_type(cv_branch_type),
         .branch_taken(bc_branch_taken),
-        .reset(rst),
+        .reset(input_reset),
         .interrupt(input_interrupt),
         
         .imem_addr_mux(mem_stall),
