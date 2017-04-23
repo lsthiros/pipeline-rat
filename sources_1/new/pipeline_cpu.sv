@@ -30,7 +30,6 @@ module pipeline_cpu(
     output io_strb
     );
     
-    wire interrupt;
     
     wire [9:0] pc_immed_address;
     wire pc_load;
@@ -154,7 +153,7 @@ module pipeline_cpu(
     /* Handles stall cases for prog rom */
     always_comb begin
         /* TODO: resolve interrupt case for when it happens during delays */
-        if (interrupt) begin
+        if (input_interrupt) begin
             rom_address <= 10'h3F;
         end
         else if (mem_stall) begin
