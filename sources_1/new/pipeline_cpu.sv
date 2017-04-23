@@ -343,7 +343,7 @@ module pipeline_cpu(
     always_comb begin
         case (cv_scr_addr_sel)
             2'h0: scr_addr <= cv_dy_out;
-            2'h1: scr_addr <= cv_ir;
+            2'h1: scr_addr <= cv_ir[7:0];
             2'h2: scr_addr <= sp_data_out;
             default: scr_addr <= (sp_data_out - 8'b1); // not sure if this works
         endcase
@@ -354,7 +354,7 @@ module pipeline_cpu(
     SCRATCH_RAM my_scratch_ram(
         .CLK(clk),
         .WE(cv_scr_we),
-        .ADDR(cv_ir[7:0]),
+        .ADDR(scr_addr),
         .DATA_IN(scr_data_in),
         .DATA_OUT(scr_data_out)
     );
