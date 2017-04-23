@@ -67,8 +67,8 @@ module pipeline_control(
     assign fetch_latch_stall = pc_stall; /*was fetch_reg_stall*/
     assign pc_reset = reset;
     assign pc_inc = (!pc_reset && !pc_load && !pc_stall);
-    assign pc_load = (branch_taken && !return_det) || current_state == RETURN0;
-    assign pc_mux_override = current_state == RETURN0;
+    assign pc_load = branch_taken || return_det;
+    assign pc_mux_override = 0;
     assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9);
     assign branch_miss = (instr_type == 4'h1 || instr_type == 4'h2 || instr_type == 4'h3 || instr_type == 4'h4 || instr_type == 4'h5);
     assign imem_addr_mux = pc_stall;
@@ -111,9 +111,6 @@ module pipeline_control(
             end
             else if (current_state == RETURN0) begin
                 nextState = RETURN1;
-            end
-            else if (current_state == RETURN1) begin
-                nextState = RETURN2;
             end
             else if (current_state == CALL0) begin
                 nextState = CALL1;

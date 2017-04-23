@@ -128,6 +128,9 @@ module pipeline_cpu(
     logic [9:0] scr_data_in;
     wire [9:0] scr_data_out;
     
+    wire [7:0] wb_scr;
+    wire [7:0] wb_sp;
+    
     always_comb begin
         if (pipeline_control_pc_mux_override) begin
             pc_mux_sel = 2'h1;
@@ -354,7 +357,7 @@ module pipeline_cpu(
     SCRATCH_RAM my_scratch_ram(
         .CLK(clk),
         .WE(cv_scr_we),
-        .ADDR(cv_ir[7:0]),
+        .ADDR(scr_addr),
         .DATA_IN(scr_data_in),
         .DATA_OUT(scr_data_out)
     );
@@ -393,12 +396,15 @@ module pipeline_cpu(
         .in_immed_val(cv_ir),
         .in_reg_addr(cv_wb_addr),
         .in_in(in_port),
+        .in_scr(scr_data_out[7:0]),
         .out_result(wb_result),
         .out_immed_val(wb_immed_val),
         .out_in(wb_in),
         .out_rf_wr_sel(wb_rf_wr_sel),
         .out_write(reg_wr_en),
-        .out_reg_addr(reg_wr_addr)
+        .out_reg_addr(reg_wr_addr),
+        .out_scr(wb_scr),
+        .out_sp(wb_sp)
     );
     
     pipeline_control my_pipeline_control(
@@ -428,8 +434,8 @@ module pipeline_cpu(
     always_comb begin
         case(wb_rf_wr_sel)
             2'h0: reg_data_in <= wb_result;
-            2'h1: reg_data_in <= scr_data_out;
-            2'h2: reg_data_in <= sp_data_out;
+            2'h1: reg_data_in <= wb_scr;
+            2'h2: reg_data_in <= wb_sp;
             default: reg_data_in <= wb_in;
         endcase
     end
@@ -454,12 +460,16 @@ module writeback_reg(
     input logic [7:0] in_in,
     input logic [1:0] in_rf_wr_sel,
     input logic [4:0] in_reg_addr,
+    input logic [7:0] in_scr,
+    input logic [7:0] in_sp,
     output reg       out_write,
     output reg [7:0] out_result,
     output reg [7:0] out_immed_val,
     output reg [7:0] out_in,
     output reg [1:0] out_rf_wr_sel,
-    output reg [4:0] out_reg_addr
+    output reg [4:0] out_reg_addr,
+    output reg [7:0] out_scr,
+    output reg [7:0] out_sp
 );
 
 always @ (posedge clk) begin
@@ -470,6 +480,8 @@ always @ (posedge clk) begin
     out_in         <= 0;       
     out_rf_wr_sel  <= 0;
     out_reg_addr <= 0;
+    out_scr <= 0;
+    out_sp <= 0;
   end
   else begin
       out_write      <= in_write;    
@@ -478,6 +490,8 @@ always @ (posedge clk) begin
       out_in         <= in_in;       
       out_rf_wr_sel  <= in_rf_wr_sel;
       out_reg_addr <= in_reg_addr;
+      out_scr <= in_scr;
+      out_sp <= in_sp;
   end
 end
   
