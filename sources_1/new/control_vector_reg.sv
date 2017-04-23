@@ -158,7 +158,7 @@ end
 else if(interupt == 1'b1) begin
 	out_PC_LD       <= 0;
 	out_PC_INC      <= 0;
-	out_PC_MUX_SEL  <= "00";
+	out_PC_MUX_SEL  <= "10";
 	out_SP_LD       <= 0;
 	out_SP_INCR     <= 0;
 	out_SP_DECR     <= 1;

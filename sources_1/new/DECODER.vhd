@@ -72,7 +72,6 @@ entity DECODER is
 		   
            RST           : out  STD_LOGIC);
 end DECODER;
-
 architecture Behavioral of DECODER is
 TYPE state_type is (ST_FETCH, ST_EXEC, ST_INIT, ST_INT);
 signal PS, NS : state_type;
@@ -326,6 +325,7 @@ case op is
 		SP_INCR      <= '1';
 		SCR_WE       <= '0';
 		SCR_ADDR_SEL <= "10";
+		PC_MUX_SEL   <= "01";
 	when "0110110" => -- RETID
 		BRANCH_TYPE <= x"8";
 		SCR_ADDR_SEL <= "10";
@@ -334,6 +334,7 @@ case op is
 		FLG_C_LD     <= '1';
 		FLG_LD_SEL   <= '1';
 		I_CLR        <= '1';
+		PC_MUX_SEL   <= "01";
 	when "0110111" => -- RETIE
 		BRANCH_TYPE <= x"9";
 		SCR_ADDR_SEL <= "10";
@@ -342,6 +343,7 @@ case op is
 		FLG_C_LD     <= '1';
 		FLG_LD_SEL   <= '1';
 		I_SET        <= '1';
+		PC_MUX_SEL   <= "01";
 	when "0100010" => -- ROL
 		RF_WR        <= '1';
 		RF_WR_SEL    <= "00";
