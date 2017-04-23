@@ -6,7 +6,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
-entity RAT_wrapper is
+entity RAT_pipeline_wrapper is
     Port ( LEDS      : out   STD_LOGIC_VECTOR (15 downto 0);
            SSEG_VAL1 : out   STD_LOGIC_VECTOR (13 downto 0);
            SSEG_VAL2 : out   STD_LOGIC_VECTOR (7 downto 0);
@@ -15,9 +15,9 @@ entity RAT_wrapper is
            INT       : in    STD_LOGIC;
            RST       : in    STD_LOGIC;
            CLK       : in    STD_LOGIC);
-end RAT_wrapper;
+end RAT_pipeline_wrapper;
 
-architecture Behavioral of RAT_wrapper is    
+architecture Behavioral of RAT_pipeline_wrapper is    
    -- INPUT PORT IDS -------------------------------------------------------------
    -- Right now, the only possible inputs are the switches
    -- In future labs you can add more port IDs, and you'll have
@@ -39,15 +39,15 @@ architecture Behavioral of RAT_wrapper is
    -------------------------------------------------------------------------------
 
    -- Declare RAT_CPU ------------------------------------------------------------
-   component RAT_CPU 
-       Port ( IN_PORT  : in  STD_LOGIC_VECTOR (7 downto 0);
-              OUT_PORT : out STD_LOGIC_VECTOR (7 downto 0);
-              PORT_ID  : out STD_LOGIC_VECTOR (7 downto 0);
-              IO_STRB  : out STD_LOGIC;
-              RST      : in  STD_LOGIC;
-              INT_IN   : in  STD_LOGIC;
-              CLK      : in  STD_LOGIC);
-   end component RAT_CPU;
+   component pipeline_cpu 
+       Port ( in_port  : in  STD_LOGIC_VECTOR (7 downto 0);
+              out_port : out STD_LOGIC_VECTOR (7 downto 0);
+              port_id  : out STD_LOGIC_VECTOR (7 downto 0);
+              io_strb  : out STD_LOGIC;
+              rst      : in  STD_LOGIC;
+              input_interrupt   : in  STD_LOGIC;
+              clk      : in  STD_LOGIC);
+   end component pipeline_cpu;
    -------------------------------------------------------------------------------
       
    -- Signals for connecting RAT_CPU to RAT_wrapper -------------------------------
@@ -67,14 +67,14 @@ architecture Behavioral of RAT_wrapper is
 begin
    
    -- Instantiate RAT_CPU --------------------------------------------------------
-   CPU: RAT_CPU
-   port map(  IN_PORT  => s_input_port,
-              OUT_PORT => s_output_port,
-              PORT_ID  => s_port_id,
-              RST      => RST,  
-              IO_STRB  => s_load,
-              INT_IN   => INT,
-              CLK      => CLK);         
+   CPU: pipeline_cpu
+   port map(  in_port  => s_input_port,
+              out_port => s_output_port,
+              port_id  => s_port_id,
+              rst      => RST,  
+              io_strb  => s_load,
+              input_interrupt   => INT,
+              clk      => CLK);         
    -------------------------------------------------------------------------------
       
    ------------------------------------------------------------------------------- 

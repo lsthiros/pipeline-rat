@@ -107,6 +107,7 @@ architecture Behavioral of RAT_CPU is
               DY_OUT : out    STD_LOGIC_VECTOR (7 downto 0);
               ADRX   : in     STD_LOGIC_VECTOR (4 downto 0);
               ADRY   : in     STD_LOGIC_VECTOR (4 downto 0);
+              WR_ADR : out
               WE     : in     STD_LOGIC;
               CLK    : in     STD_LOGIC);
    end component;

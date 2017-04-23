@@ -16,14 +16,14 @@ END CPU_SIM;
 ARCHITECTURE behavior OF CPU_SIM IS 
     -- Component Declaration for the Unit Under Test (UUT)
     
-    component RAT_CPU is
-        Port ( IN_PORT    : in  STD_LOGIC_VECTOR (7 downto 0);
-               RST        : in  STD_LOGIC;
-               CLK        : in  STD_LOGIC;
-               INT_IN     : in  STD_LOGIC;
-               OUT_PORT   : out  STD_LOGIC_VECTOR (7 downto 0);
-               PORT_ID    : out  STD_LOGIC_VECTOR (7 downto 0);
-               IO_STRB    : out  STD_LOGIC);
+    component pipeline_cpu is
+        Port ( in_port    : in  STD_LOGIC_VECTOR (7 downto 0);
+               rst        : in  STD_LOGIC;
+               clk        : in  STD_LOGIC;
+               input_interrupt     : in  STD_LOGIC;
+               out_port   : out  STD_LOGIC_VECTOR (7 downto 0);
+               port_id    : out  STD_LOGIC_VECTOR (7 downto 0);
+               io_strb    : out  STD_LOGIC);
     end component;
 
    --Inputs
@@ -43,15 +43,15 @@ ARCHITECTURE behavior OF CPU_SIM IS
  
 BEGIN
         
-uut: RAT_CPU
+uut: pipeline_cpu
     Port Map(
-        IN_PORT  => IN_PORT_tb,
-        RST      => RST_tb,
-        CLK      => CLK_tb,
-        INT_IN   => INT_IN_tb,
-        OUT_PORT => OUT_PORT_tb,
-        PORT_ID  => PORT_ID_tb,
-        IO_STRB  => IO_STRB_tb
+        in_port  => IN_PORT_tb,
+        rst      => RST_tb,
+        clk      => CLK_tb,
+        input_interrupt   => INT_IN_tb,
+        out_port => OUT_PORT_tb,
+        port_id  => PORT_ID_tb,
+        io_strb  => IO_STRB_tb
     );
 
    -- Clock process definitions
@@ -66,13 +66,14 @@ uut: RAT_CPU
    -- verify memory
    VERIFY_process :process
    begin
+      INT_IN_tb <= '0';
       RST_tb <= '1';
       wait for 10 ns;
       RST_tb <= '0';
       wait for 360 ns;    
-      INT_IN_tb <= '1';
+      INT_IN_tb <= '0';
       wait for 30 ns;
       INT_IN_tb <= '0';
-      wait for 1000 ns;           
+      wait for 3000 ns;         
    end process VERIFY_process;
 END;
