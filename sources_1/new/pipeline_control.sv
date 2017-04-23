@@ -42,7 +42,7 @@ module pipeline_control(
     output pc_reset
     );
     
-    typedef enum {CHECK, CALL, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, RESET0, RESET1, RETURN0, RETURN1} HazardState;
+    typedef enum {CHECK, CALL0, CALL1, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, RESET0, RESET1, RETURN0, RETURN1} HazardState;
     
     HazardState current_state = CHECK;
     HazardState nextState = CHECK;
@@ -58,6 +58,7 @@ module pipeline_control(
     assign dec_nop = (branch_taken || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
         || (interrupt || current_state == INT0 || current_state == INT1)
         || (return_det || current_state == RETURN0 || current_state == RETURN1)
+        || (instr_type == 4'h6 || current_state == CALL0 || current_state == CALL1)
         || (current_state == RESET0 || current_state == RESET1)
         || (current_state == RAW_EX || raw_wb || raw_ex);
     assign pc_stall = (raw_ex || current_state == RAW_EX || raw_wb);
@@ -66,7 +67,7 @@ module pipeline_control(
     assign pc_reset = reset;
     assign pc_inc = (!pc_reset && !pc_load && !pc_stall);
     assign pc_load = branch_taken;
-    assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9) || instr_type == 4'h6;
+    assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9);
     assign branch_miss = (instr_type == 4'h1 || instr_type == 4'h2 || instr_type == 4'h3 || instr_type == 4'h4 || instr_type == 4'h5);
     assign imem_addr_mux = pc_stall;
     
@@ -83,6 +84,9 @@ module pipeline_control(
             else if(current_state == CHECK) begin
                 if (raw_ex) begin
                     nextState = RAW_EX;
+                end
+                else if (instr_type == 4'h6) begin
+                    nextState = CALL0;
                 end
                 else if (branch_taken && !return_det) begin
                     nextState = BRANCH_MIS0;
@@ -119,6 +123,12 @@ module pipeline_control(
                 nextState = RETURN1;
             end
             else if (current_state == RETURN1) begin
+                nextState = CHECK;
+            end
+            else if (current_state == CALL0) begin
+                nextState = CALL1;
+            end
+            else if (current_state == CALL1) begin
                 nextState = CHECK;
             end
             else begin

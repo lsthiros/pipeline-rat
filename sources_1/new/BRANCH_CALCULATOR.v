@@ -82,6 +82,9 @@ module BRANCH_CALCULATOR(
 					BRANCH_TAKEN = 1'b0;
                 end
 			  end
+        4'h6 : begin // CALL
+                BRANCH_TAKEN = 1'b1;
+            end
 		4'h7 : begin // RET
                 BRANCH_TAKEN = 1'b1;
 			  end
