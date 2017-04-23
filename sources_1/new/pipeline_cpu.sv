@@ -33,11 +33,10 @@ module pipeline_cpu(
     wire interrupt;
     
     wire [9:0] pc_immed_address;
-    wire [9:0] pc_stack_address;
     wire pc_load;
     wire pc_inc;
     wire pc_reset;
-    wire [1:0] pc_mux_sel;
+    logic [1:0] pc_mux_sel;
     wire [9:0] pc_count;
     
     wire mem_stall;
@@ -121,8 +120,22 @@ module pipeline_cpu(
     wire pipeline_control_nop;
     wire pipeline_control_a_read;
     wire pipeline_control_b_read;
+    wire pipeline_control_pc_mux_override;
     
     wire [7:0] sp_data_out;
+    
+    logic [7:0] scr_addr;
+    logic [9:0] scr_data_in;
+    wire [9:0] scr_data_out;
+    
+    always_comb begin
+        if (pipeline_control_pc_mux_override) begin
+            pc_mux_sel = 2'h1;
+        end
+        else begin
+            pc_mux_sel = cv_pc_mux_sel;
+        end
+    end
     
     PC my_pc (
         .CLK        (clk),
@@ -131,7 +144,7 @@ module pipeline_cpu(
         .RST        (pc_reset),
         .PC_MUX_SEL (pc_mux_sel),
         .FROM_IMMED (pc_immed_address),
-        .FROM_STACK (pc_stack_address),
+        .FROM_STACK (scr_data_out),
         .PC_COUNT   (pc_count)
     );
     
@@ -242,7 +255,7 @@ module pipeline_cpu(
                            
         .out_PC_LD(cv_pc_ld),   
         .out_PC_INC(cv_pc_inc),   
-        .out_PC_MUX_SEL(pc_mux_sel),
+        .out_PC_MUX_SEL(cv_pc_mux_sel),
         .out_SP_LD(cv_sp_ld),   
         .out_SP_INCR(cv_sp_incr),   
         .out_SP_DECR(cv_sp_decr),   
@@ -327,10 +340,6 @@ module pipeline_cpu(
         .RESULT(alu_result)
     );
     
-    logic [7:0] scr_addr;
-    logic [9:0] scr_data_in;
-    wire [9:0] scr_data_out;
-    
     always_comb begin
         case (cv_scr_addr_sel)
             2'h0: scr_addr <= cv_dy_out;
@@ -350,7 +359,6 @@ module pipeline_cpu(
         .DATA_OUT(scr_data_out)
     );
     
-    assign pc_stack_address = scr_data_out;
     assign pc_immed_address = cv_dest_addr;
     
     SP my_sp(
@@ -412,6 +420,7 @@ module pipeline_cpu(
         .pc_inc(pc_inc),
         .pc_load(pc_load),
         .pc_reset(pc_reset),
+        .pc_mux_override(pipeline_control_pc_mux_override),
         .a_read(pipeline_control_a_read),
         .b_read(pipeline_control_b_read)
     );
