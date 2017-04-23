@@ -239,14 +239,14 @@ case op is
 		SCR_ADDR_SEL <= "00";
 		RF_WR        <= '1';
 		RF_WR_SEL    <= "01";
-		REG_X_READ <= '1';
+		REG_X_READ <= '0';
 		REG_Y_READ <= '1';		
 	when "1110000" | "1110001" | "1110010" | "1110011" => -- LD RI    
 		SCR_WE       <= '0';
 		SCR_ADDR_SEL <= "01";
 		RF_WR        <= '1';
 		RF_WR_SEL    <= "01";
-		REG_X_READ <= '1';
+		REG_X_READ <= '0';
 		REG_Y_READ <= '0';
 		
 	when "0100000" => -- LSL
@@ -370,13 +370,13 @@ case op is
 		SCR_DATA_SEL <= '0';
 		SCR_WE       <= '1';
 		SCR_ADDR_SEL <= "00";
-		REG_X_READ <= '0';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '1';
 	when "1110100" | "1110101" | "1110110" | "1110111" => -- ST RI
 		SCR_DATA_SEL <= '0';
 		SCR_WE       <= '1';
 		SCR_ADDR_SEL <= "01"; 
-		REG_X_READ <= '0';
+		REG_X_READ <= '1';
 		REG_Y_READ <= '0';
 	when "0000110" => -- SUB RR
 		RF_WR        <= '1';
