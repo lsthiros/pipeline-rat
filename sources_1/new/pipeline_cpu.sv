@@ -114,7 +114,6 @@ module pipeline_cpu(
     wire [9:0] cv_dest_addr;
     wire [9:0] cv_pc_out;
     
-    wire pipeline_control_int;
     wire pipeline_control_reset;
     wire pipeline_control_nop;
     wire pipeline_control_a_read;
@@ -132,7 +131,7 @@ module pipeline_cpu(
     
     always_comb begin
         if (pipeline_control_pc_mux_override) begin
-            pc_mux_sel = 2'h1;
+                pc_mux_sel = 2'h1;
         end
         else begin
             pc_mux_sel = cv_pc_mux_sel;
@@ -197,7 +196,7 @@ module pipeline_cpu(
     DECODER my_decoder(
         .OPCODE_HI_5 (fetch_instr_out[17:13]),
         .OPCODE_LO_2 (fetch_instr_out[1:0]),
-        .INT         (pipeline_control_int),
+        .INT         (input_interrupt),
         .RESET       (pipeline_control_reset),
         .PC_LD(dec_pc_ld),
         .PC_INC(dec_pc_inc),
@@ -251,7 +250,7 @@ module pipeline_cpu(
         .in_IO_STRB(dec_iostrobe),   
         .in_BRANCH_TYPE(dec_branch_type), 
         .in_rst(rst),   
-        .interupt(pipeline_control_int), // this might be the interupt from control not instruction             
+        .interupt(input_interrupt), // this might be the interupt from control not instruction             
         .clk(clk),                   
         .nop(pipeline_control_nop),
                            

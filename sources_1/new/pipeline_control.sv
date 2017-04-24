@@ -67,7 +67,7 @@ module pipeline_control(
     assign fetch_latch_stall = pc_stall; /*was fetch_reg_stall*/
     assign pc_reset = reset;
     assign pc_inc = (!pc_reset && !pc_load && !pc_stall);
-    assign pc_load = branch_taken || return_det;
+    assign pc_load = branch_taken || return_det || interrupt;
     assign pc_mux_override = 0;
     assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9);
     assign branch_miss = (instr_type == 4'h1 || instr_type == 4'h2 || instr_type == 4'h3 || instr_type == 4'h4 || instr_type == 4'h5);

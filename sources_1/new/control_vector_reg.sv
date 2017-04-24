@@ -51,7 +51,7 @@ module control_vector_reg(
 
     output logic out_PC_LD        ,
     output logic out_PC_INC       ,
-    output logic[1:0] out_PC_MUX_SEL   ,
+    output logic[1:0] out_PC_MUX_SEL,
     output logic out_SP_LD        ,
     output logic out_SP_INCR      ,
     output logic out_SP_DECR      ,
@@ -120,7 +120,8 @@ module control_vector_reg(
 	output logic[9:0] out_PC	
 );
 
-
+ typedef enum {rst_state,int_state ,nop_state, pass_state } OUTPUT_STATE;
+ OUTPUT_STATE current_state = pass_state;
 // act as a register and give the inputs to the outputs when clocked
 always @ (posedge clk) begin
 	out_IR = in_IR;
@@ -130,10 +131,11 @@ always @ (posedge clk) begin
 	out_PC = in_PC;
 	out_dest_addr <= in_dest_addr;
 
-if (in_rst) begin
+if (in_rst == 1'b1) begin
+    current_state <= rst_state;
     out_PC_LD       <= 0;
     out_PC_INC      <= 0;
-    out_PC_MUX_SEL  <= "00";
+    out_PC_MUX_SEL  <= 2'h0;
     out_SP_LD       <= 0;
     out_SP_INCR     <= 0;
     out_SP_DECR     <= 0;
@@ -154,11 +156,11 @@ if (in_rst) begin
     out_I_CLR       <= 0;
     out_IO_STRB     <= 0;
     out_BRANCH_TYPE <= "0000";
-end
-else if(interupt == 1'b1) begin
-	out_PC_LD       <= 0;
+end else if(interupt == 1'b1) begin
+    current_state <= int_state;
+	out_PC_LD       <= 1;
 	out_PC_INC      <= 0;
-	out_PC_MUX_SEL  <= "10";
+	out_PC_MUX_SEL  <= 2'h2; 
 	out_SP_LD       <= 0;
 	out_SP_INCR     <= 0;
 	out_SP_DECR     <= 1;
@@ -178,10 +180,37 @@ else if(interupt == 1'b1) begin
 	out_I_SET       <= 0;
 	out_I_CLR       <= 0;
 	out_IO_STRB     <= 0;
-	out_BRANCH_TYPE <= "0000";
+	out_BRANCH_TYPE <= 4'h6;
 	out_rst         <= 0;
 // When nop
-end else if(nop == 1'b0) begin
+end else if(nop == 1'b1) begin
+    current_state <= nop_state         ;
+	out_PC_LD       <= 0;
+    out_PC_INC      <= 0;
+    out_PC_MUX_SEL  <= 2'h0;
+    out_SP_LD       <= 0;
+    out_SP_INCR     <= 0;
+    out_SP_DECR     <= 0;
+    out_RF_WR       <= 0;
+    out_RF_WR_SEL   <= "00";
+    out_ALU_OPY_SEL <= 0;
+    out_ALU_SEL     <= "0000";
+    out_SCR_WE      <= 0;
+    out_SCR_DATA_SE <= 0;
+    out_SCR_ADDR_SE <= "00";
+    out_FLG_C_SET   <= 0;
+    out_FLG_C_CLR   <= 0;
+    out_FLG_C_LD    <= 0;
+    out_FLG_Z_LD    <= 0;
+    out_FLG_LD_SEL  <= 0;
+    out_FLG_SHAD_LD <= 0;
+    out_I_SET       <= 0;
+    out_I_CLR       <= 0;
+    out_IO_STRB     <= 0;
+    out_BRANCH_TYPE <= "0000";
+    out_rst         <= 0;
+end else begin
+    current_state <= pass_state;               
 	out_PC_LD       <= in_PC_LD        ;
     out_PC_INC      <= in_PC_INC       ;
     out_PC_MUX_SEL  <= in_PC_MUX_SEL   ;
@@ -206,33 +235,6 @@ end else if(nop == 1'b0) begin
     out_IO_STRB     <= in_IO_STRB      ;
     out_BRANCH_TYPE <= in_BRANCH_TYPE  ;
     out_rst         <= in_rst          ;
-end else begin
-	out_PC_LD       <= 0;
-	out_PC_INC      <= 0;
-	out_PC_MUX_SEL  <= "00";
-	out_SP_LD       <= 0;
-	out_SP_INCR     <= 0;
-	out_SP_DECR     <= 0;
-	out_RF_WR       <= 0;
-	out_RF_WR_SEL   <= "00";
-	out_ALU_OPY_SEL <= 0;
-	out_ALU_SEL     <= "0000";
-	out_SCR_WE      <= 0;
-	out_SCR_DATA_SE <= 0;
-	out_SCR_ADDR_SE <= "00";
-	out_FLG_C_SET   <= 0;
-	out_FLG_C_CLR   <= 0;
-	out_FLG_C_LD    <= 0;
-	out_FLG_Z_LD    <= 0;
-	out_FLG_LD_SEL  <= 0;
-	out_FLG_SHAD_LD <= 0;
-	out_I_SET       <= 0;
-	out_I_CLR       <= 0;
-	out_IO_STRB     <= 0;
-	out_BRANCH_TYPE <= "0000";
-	out_rst         <= 0;
-                    
-
 end
 end
 
