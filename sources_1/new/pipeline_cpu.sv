@@ -39,7 +39,7 @@ module pipeline_cpu(
     wire [9:0] pc_count;
     
     wire mem_stall;
-    
+    logic interrupt;
     /* Register should always contain address that is out on memory line */
     reg [9:0] pc_delay = 0;
     
@@ -129,6 +129,8 @@ module pipeline_cpu(
     wire [7:0] wb_scr;
     wire [7:0] wb_sp;
     
+
+    
     always_comb begin
         if (pipeline_control_pc_mux_override) begin
                 pc_mux_sel = 2'h1;
@@ -152,8 +154,8 @@ module pipeline_cpu(
     /* Handles stall cases for prog rom */
     always_comb begin
         /* TODO: resolve interrupt case for when it happens during delays */
-        if (input_interrupt) begin
-            rom_address <= 10'h3F;
+        if (interrupt) begin
+            rom_address <= 10'h3FF;
         end
         else if (mem_stall) begin
             rom_address <= pc_delay;
@@ -196,7 +198,7 @@ module pipeline_cpu(
     DECODER my_decoder(
         .OPCODE_HI_5 (fetch_instr_out[17:13]),
         .OPCODE_LO_2 (fetch_instr_out[1:0]),
-        .INT         (input_interrupt),
+        .INT         (interrupt),
         .RESET       (pipeline_control_reset),
         .PC_LD(dec_pc_ld),
         .PC_INC(dec_pc_inc),
@@ -250,7 +252,7 @@ module pipeline_cpu(
         .in_IO_STRB(dec_iostrobe),   
         .in_BRANCH_TYPE(dec_branch_type), 
         .in_rst(rst),   
-        .interupt(input_interrupt), // this might be the interupt from control not instruction             
+        .interupt(interrupt), // this might be the interupt from control not instruction             
         .clk(clk),                   
         .nop(pipeline_control_nop),
                            
@@ -329,6 +331,15 @@ module pipeline_cpu(
         .I_CLR (cv_i_clr),
         .I_OUT (flg_i)
     );
+    
+    // interrupt flag control    
+        always_comb begin
+            interrupt <= (flg_i & input_interrupt);
+        end
+        
+    
+    
+    
     
     assign alu_b = (cv_alu_opy_sel == 1'b1) ? cv_ir : cv_dy_out;
     ALU my_alu(
@@ -416,7 +427,7 @@ module pipeline_cpu(
         .instr_type(cv_branch_type),
         .branch_taken(bc_branch_taken),
         .reset(rst),
-        .interrupt(input_interrupt),
+        .interrupt(interrupt),
         
         .imem_addr_mux(mem_stall),
         .fetch_latch_stall(fetch_reg_stall),

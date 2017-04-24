@@ -153,7 +153,7 @@ if (in_rst == 1'b1) begin
     out_FLG_LD_SEL  <= 0;
     out_FLG_SHAD_LD <= 0;
     out_I_SET       <= 0;
-    out_I_CLR       <= 0;
+    out_I_CLR       <= 1;
     out_IO_STRB     <= 0;
     out_BRANCH_TYPE <= "0000";
 end else if(interupt == 1'b1) begin
@@ -169,16 +169,16 @@ end else if(interupt == 1'b1) begin
 	out_ALU_OPY_SEL <= 0;
 	out_ALU_SEL     <= "0000";
 	out_SCR_WE      <= 1;
-	out_SCR_DATA_SE <= 0;
+	out_SCR_DATA_SE <= 1;
 	out_SCR_ADDR_SE <= "11";
 	out_FLG_C_SET   <= 0;
 	out_FLG_C_CLR   <= 0;
 	out_FLG_C_LD    <= 0;
 	out_FLG_Z_LD    <= 0;
 	out_FLG_LD_SEL  <= 0;
-	out_FLG_SHAD_LD <= 0;
+	out_FLG_SHAD_LD <= 1;
 	out_I_SET       <= 0;
-	out_I_CLR       <= 0;
+	out_I_CLR       <= 1;
 	out_IO_STRB     <= 0;
 	out_BRANCH_TYPE <= 4'h6;
 	out_rst         <= 0;
