@@ -38,7 +38,7 @@ module pipeline_control(
     output fetch_latch_stall,
     output dec_nop,
     output pc_inc,
-    output pc_load,
+    output logic pc_load,
     output pc_reset,
     output pc_mux_override
     );

@@ -100,7 +100,7 @@ module control_vector_reg(
     input logic[3:0] in_BRANCH_TYPE  ,
     input logic in_rst          ,
     input logic [9:0] in_dest_addr,
-	input logic interupt,
+	input logic interrupt,
 	input logic clk,
 	input logic nop,
 	
@@ -117,35 +117,44 @@ module control_vector_reg(
 	output logic[4:0] out_WB_ADDR,
 	// program counters
 	input logic[9:0] in_PC,
-	output logic[9:0] out_PC	
+	output logic[9:0] out_PC
+		
 );
-
- typedef enum {rst_state,int_state ,nop_state, pass_state } OUTPUT_STATE;
- OUTPUT_STATE current_state = pass_state;
+   
+    logic [1:0]raw_SCR_ADDR_SE;
+    logic raw_SP_LD      ;
+    logic raw_SP_INCR    ;
+    logic raw_SP_DECR    ;
+    logic raw_SCR_WE     ;
+    typedef enum {rst_state,int_state ,nop_state, pass_state } OUTPUT_STATE;
+    OUTPUT_STATE current_state = pass_state;
 // act as a register and give the inputs to the outputs when clocked
+    logic scr_addr_sel = 0;
+ 
 always @ (posedge clk) begin
-	out_IR = in_IR;
-	out_DX = in_DX;
-	out_DY = in_DY;
-	out_WB_ADDR = in_WB_ADDR;
-	out_PC = in_PC;
+	out_IR <= in_IR;
+	out_DX <= in_DX;
+	out_DY <= in_DY;
+	out_WB_ADDR <= in_WB_ADDR;
+	out_PC <= in_PC;
 	out_dest_addr <= in_dest_addr;
 
 if (in_rst == 1'b1) begin
     current_state <= rst_state;
+    out_PC_MUX_SEL  <= 2'h0;
     out_PC_LD       <= 0;
     out_PC_INC      <= 0;
-    out_PC_MUX_SEL  <= 2'h0;
-    out_SP_LD       <= 0;
-    out_SP_INCR     <= 0;
-    out_SP_DECR     <= 0;
+
+    raw_SP_LD       <= 0;
+    raw_SP_INCR     <= 0;
+    raw_SP_DECR     <= 0;
     out_RF_WR       <= 0;
     out_RF_WR_SEL   <= "00";
     out_ALU_OPY_SEL <= 0;
     out_ALU_SEL     <= "0000";
-    out_SCR_WE      <= 0;
+    raw_SCR_WE      <= 0;
     out_SCR_DATA_SE <= 0;
-    out_SCR_ADDR_SE <= 0;
+//    out_SCR_ADDR_SE <= "00";
     out_FLG_C_SET   <= 0;
     out_FLG_C_CLR   <= 0;
     out_FLG_C_LD    <= 0;
@@ -156,21 +165,24 @@ if (in_rst == 1'b1) begin
     out_I_CLR       <= 1;
     out_IO_STRB     <= 0;
     out_BRANCH_TYPE <= "0000";
-end else if(interupt == 1'b1) begin
+    out_rst         <= 0;
+end else if(interrupt == 1'b1) begin
+    
     current_state <= int_state;
+    out_PC_MUX_SEL  <= 2'h2; 
 	out_PC_LD       <= 1;
 	out_PC_INC      <= 0;
-	out_PC_MUX_SEL  <= 2'h2; 
-	out_SP_LD       <= 0;
-	out_SP_INCR     <= 0;
-	out_SP_DECR     <= 1;
+
+	raw_SP_LD       <= 0;
+	raw_SP_INCR     <= 0;
+	raw_SP_DECR     <= 1;
 	out_RF_WR       <= 0;
 	out_RF_WR_SEL   <= "00";
 	out_ALU_OPY_SEL <= 0;
 	out_ALU_SEL     <= "0000";
-	out_SCR_WE      <= 1;
+	raw_SCR_WE      <= 1;
 	out_SCR_DATA_SE <= 1;
-	out_SCR_ADDR_SE <= "11";
+//	out_SCR_ADDR_SE <= "11";
 	out_FLG_C_SET   <= 0;
 	out_FLG_C_CLR   <= 0;
 	out_FLG_C_LD    <= 0;
@@ -185,19 +197,20 @@ end else if(interupt == 1'b1) begin
 // When nop
 end else if(nop == 1'b1) begin
     current_state <= nop_state         ;
+    out_PC_MUX_SEL  <= 2'h0;
 	out_PC_LD       <= 0;
     out_PC_INC      <= 0;
-    out_PC_MUX_SEL  <= 2'h0;
-    out_SP_LD       <= 0;
-    out_SP_INCR     <= 0;
-    out_SP_DECR     <= 0;
+
+    raw_SP_LD       <= 0;
+    raw_SP_INCR     <= 0;
+    raw_SP_DECR     <= 0;
     out_RF_WR       <= 0;
     out_RF_WR_SEL   <= "00";
     out_ALU_OPY_SEL <= 0;
     out_ALU_SEL     <= "0000";
-    out_SCR_WE      <= 0;
+    raw_SCR_WE      <= 0;
     out_SCR_DATA_SE <= 0;
-    out_SCR_ADDR_SE <= "00";
+//    out_SCR_ADDR_SE <= "00";
     out_FLG_C_SET   <= 0;
     out_FLG_C_CLR   <= 0;
     out_FLG_C_LD    <= 0;
@@ -214,16 +227,16 @@ end else begin
 	out_PC_LD       <= in_PC_LD        ;
     out_PC_INC      <= in_PC_INC       ;
     out_PC_MUX_SEL  <= in_PC_MUX_SEL   ;
-    out_SP_LD       <= in_SP_LD        ;
-    out_SP_INCR     <= in_SP_INCR      ;
-    out_SP_DECR     <= in_SP_DECR      ;
+    raw_SP_LD       <= in_SP_LD        ;
+    raw_SP_INCR     <= in_SP_INCR      ;
+    raw_SP_DECR     <= in_SP_DECR      ;
     out_RF_WR       <= in_RF_WR        ;
     out_RF_WR_SEL   <= in_RF_WR_SEL    ;
     out_ALU_OPY_SEL <= in_ALU_OPY_SEL  ;
     out_ALU_SEL     <= in_ALU_SEL      ;
-    out_SCR_WE      <= in_SCR_WE       ;
+    raw_SCR_WE      <= in_SCR_WE       ;
     out_SCR_DATA_SE <= in_SCR_DATA_SE  ;
-    out_SCR_ADDR_SE <= in_SCR_ADDR_SE  ;
+//    out_SCR_ADDR_SE <= in_SCR_ADDR_SE  ;
     out_FLG_C_SET   <= in_FLG_C_SET    ;
     out_FLG_C_CLR   <= in_FLG_C_CLR    ;
     out_FLG_C_LD    <= in_FLG_C_LD     ;
@@ -237,5 +250,31 @@ end else begin
     out_rst         <= in_rst          ;
 end
 end
+   
 
+    
+   always_comb begin
+   if (current_state == int_state ) begin
+       out_SCR_ADDR_SE[1] =   raw_SCR_ADDR_SE[1]  & interrupt;
+       out_SCR_ADDR_SE[0] =   raw_SCR_ADDR_SE[0]  & interrupt;
+       out_SP_LD       =   (raw_SP_LD        & interrupt);
+       out_SP_INCR     =   (raw_SP_INCR      & interrupt);
+       out_SP_DECR     =   (raw_SP_DECR      & interrupt);
+       out_SCR_WE      =   (raw_SCR_WE       & interrupt);
+   end else begin
+       out_SCR_ADDR_SE =   (raw_SCR_ADDR_SE );
+       out_SP_LD       =   (raw_SP_LD       );
+       out_SP_INCR     =   (raw_SP_INCR     );
+       out_SP_DECR     =   (raw_SP_DECR     );
+       out_SCR_WE      =   (raw_SCR_WE      );
+   end
+   end
+   always_comb begin
+     case (current_state)
+         rst_state: raw_SCR_ADDR_SE <= 2'h0;
+         nop_state: raw_SCR_ADDR_SE <= 2'h0;
+         int_state: raw_SCR_ADDR_SE <= 2'h3;
+         default  :raw_SCR_ADDR_SE <= in_SCR_ADDR_SE; // not sure if this works
+     endcase
+ end
 endmodule

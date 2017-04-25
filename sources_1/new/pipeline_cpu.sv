@@ -21,32 +21,32 @@
 
 
 module pipeline_cpu(
-    input clk,
-    input rst,
-    input input_interrupt,
-    input [7:0] in_port,
+    input        clk,
+    input        rst,
+    input        input_interrupt,
+    input  [7:0] in_port,
     output [7:0] out_port,
     output [7:0] port_id,
-    output io_strb
+    output      io_strb
     );
     
     
-    wire [9:0] pc_immed_address;
-    wire pc_load;
-    wire pc_inc;
-    wire pc_reset;
+    wire  [9:0] pc_immed_address;
+    wire        pc_load;
+    wire        pc_inc;
+    wire        pc_reset;
     logic [1:0] pc_mux_sel;
-    wire [9:0] pc_count;
+    wire  [9:0] pc_count;
     
-    wire mem_stall;
+    wire  mem_stall;
     logic interrupt;
     /* Register should always contain address that is out on memory line */
-    reg [9:0] pc_delay = 0;
+    reg   [9:0]  pc_delay = 0;
     
-    logic [9:0] rom_address;
-    wire [17:0] rom_instr;
+    logic [9:0]  rom_address;
+    wire  [17:0] rom_instr;
     
-    wire fetch_reg_stall;
+    wire  fetch_reg_stall;
     
     wire [17:0] fetch_instr_out;
     wire [9:0]  fetch_addr_out;
@@ -252,7 +252,7 @@ module pipeline_cpu(
         .in_IO_STRB(dec_iostrobe),   
         .in_BRANCH_TYPE(dec_branch_type), 
         .in_rst(rst),   
-        .interupt(interrupt), // this might be the interupt from control not instruction             
+        .interrupt(interrupt), // this might be the interupt from control not instruction             
         .clk(clk),                   
         .nop(pipeline_control_nop),
                            
@@ -442,9 +442,9 @@ module pipeline_cpu(
     
     always_comb begin
         case(wb_rf_wr_sel)
-            2'h0: reg_data_in <= wb_result;
-            2'h1: reg_data_in <= wb_scr;
-            2'h2: reg_data_in <= wb_sp;
+            2'h0: reg_data_in    <= wb_result;
+            2'h1: reg_data_in    <= wb_scr;
+            2'h2: reg_data_in    <= wb_sp;
             default: reg_data_in <= wb_in;
         endcase
     end
@@ -461,9 +461,9 @@ endmodule
 
 /* write back reg */
 module writeback_reg(
-    input rst,
-    input logic clk,
-    input logic in_write,
+    input             rst,
+    input logic       clk,
+    input logic       in_write,
     input logic [7:0] in_result,
     input logic [7:0] in_immed_val,
     input logic [7:0] in_in,
@@ -471,14 +471,14 @@ module writeback_reg(
     input logic [4:0] in_reg_addr,
     input logic [7:0] in_scr,
     input logic [7:0] in_sp,
-    output reg       out_write,
-    output reg [7:0] out_result,
-    output reg [7:0] out_immed_val,
-    output reg [7:0] out_in,
-    output reg [1:0] out_rf_wr_sel,
-    output reg [4:0] out_reg_addr,
-    output reg [7:0] out_scr,
-    output reg [7:0] out_sp
+    output reg        out_write,
+    output reg  [7:0] out_result,
+    output reg  [7:0] out_immed_val,
+    output reg  [7:0] out_in,
+    output reg  [1:0] out_rf_wr_sel,
+    output reg  [4:0] out_reg_addr,
+    output reg  [7:0] out_scr,
+    output reg  [7:0] out_sp
 );
 
 always @ (posedge clk) begin
@@ -488,9 +488,9 @@ always @ (posedge clk) begin
     out_immed_val  <= 0; 
     out_in         <= 0;       
     out_rf_wr_sel  <= 0;
-    out_reg_addr <= 0;
-    out_scr <= 0;
-    out_sp <= 0;
+    out_reg_addr   <= 0;
+    out_scr        <= 0;
+    out_sp         <= 0;
   end
   else begin
       out_write      <= in_write;    
@@ -498,9 +498,9 @@ always @ (posedge clk) begin
       out_immed_val  <= in_immed_val; 
       out_in         <= in_in;       
       out_rf_wr_sel  <= in_rf_wr_sel;
-      out_reg_addr <= in_reg_addr;
-      out_scr <= in_scr;
-      out_sp <= in_sp;
+      out_reg_addr   <= in_reg_addr;
+      out_scr        <= in_scr;
+      out_sp         <= in_sp;
   end
 end
   
