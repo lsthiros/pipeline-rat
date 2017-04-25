@@ -70,7 +70,7 @@ uut: pipeline_cpu
       RST_tb <= '1';
       wait for CLK_period;
       RST_tb <= '0';
-      wait for CLK_period * 18;    
+      wait for CLK_period * 36;    
       INT_IN_tb <= '1';
       wait for CLK_period;
       INT_IN_tb <= '0';
