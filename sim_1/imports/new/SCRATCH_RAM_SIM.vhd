@@ -68,12 +68,12 @@ uut: pipeline_cpu
    begin
       INT_IN_tb <= '0';
       RST_tb <= '1';
-      wait for 10 ns;
+      wait for CLK_period;
       RST_tb <= '0';
-      wait for 360 ns;    
+      wait for CLK_period * 36;    
+      INT_IN_tb <= '1';
+      wait for CLK_period;
       INT_IN_tb <= '0';
-      wait for 30 ns;
-      INT_IN_tb <= '0';
-      wait for 3000 ns;         
+      wait for CLK_period * 500;         
    end process VERIFY_process;
 END;
