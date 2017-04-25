@@ -21,32 +21,33 @@
 
 
 module pipeline_cpu(
-    input        clk,
-    input        rst,
-    input        input_interrupt,
-    input  [7:0] in_port,
+    input clk,
+    input rst,
+    input input_interrupt,
+    input [7:0] in_port,
     output [7:0] out_port,
     output [7:0] port_id,
-    output      io_strb
+    output io_strb
     );
     
+    wire interrupt;
     
-    wire  [9:0] pc_immed_address;
-    wire        pc_load;
-    wire        pc_inc;
-    wire        pc_reset;
+    wire [9:0] pc_immed_address;
+    wire pc_load;
+    wire pc_inc;
+    wire pc_reset;
     logic [1:0] pc_mux_sel;
-    wire  [9:0] pc_count;
+    wire [9:0] pc_count;
     
-    wire  mem_stall;
-    logic interrupt;
+    wire mem_stall;
+    
     /* Register should always contain address that is out on memory line */
-    reg   [9:0]  pc_delay = 0;
+    reg [9:0] pc_delay = 0;
     
-    logic [9:0]  rom_address;
-    wire  [17:0] rom_instr;
+    logic [9:0] rom_address;
+    wire [17:0] rom_instr;
     
-    wire  fetch_reg_stall;
+    wire fetch_reg_stall;
     
     wire [17:0] fetch_instr_out;
     wire [9:0]  fetch_addr_out;
@@ -114,6 +115,7 @@ module pipeline_cpu(
     wire [9:0] cv_dest_addr;
     wire [9:0] cv_pc_out;
     
+    wire pipeline_control_int;
     wire pipeline_control_reset;
     wire pipeline_control_nop;
     wire pipeline_control_a_read;
@@ -129,11 +131,9 @@ module pipeline_cpu(
     wire [7:0] wb_scr;
     wire [7:0] wb_sp;
     
-
-    
     always_comb begin
         if (pipeline_control_pc_mux_override) begin
-                pc_mux_sel = 2'h1;
+            pc_mux_sel = 2'h1;
         end
         else begin
             pc_mux_sel = cv_pc_mux_sel;
@@ -155,7 +155,7 @@ module pipeline_cpu(
     always_comb begin
         /* TODO: resolve interrupt case for when it happens during delays */
         if (interrupt) begin
-            rom_address <= 10'h3FF;
+            rom_address <= 10'h3F;
         end
         else if (mem_stall) begin
             rom_address <= pc_delay;
@@ -198,7 +198,7 @@ module pipeline_cpu(
     DECODER my_decoder(
         .OPCODE_HI_5 (fetch_instr_out[17:13]),
         .OPCODE_LO_2 (fetch_instr_out[1:0]),
-        .INT         (interrupt),
+        .INT         (pipeline_control_int),
         .RESET       (pipeline_control_reset),
         .PC_LD(dec_pc_ld),
         .PC_INC(dec_pc_inc),
@@ -252,7 +252,7 @@ module pipeline_cpu(
         .in_IO_STRB(dec_iostrobe),   
         .in_BRANCH_TYPE(dec_branch_type), 
         .in_rst(rst),   
-        .interrupt(interrupt), // this might be the interupt from control not instruction             
+        .interupt(pipeline_control_int), // this might be the interupt from control not instruction             
         .clk(clk),                   
         .nop(pipeline_control_nop),
                            
@@ -332,15 +332,6 @@ module pipeline_cpu(
         .I_OUT (flg_i)
     );
     
-    // interrupt flag control    
-        always_comb begin
-            interrupt <= (flg_i & input_interrupt);
-        end
-        
-    
-    
-    
-    
     assign alu_b = (cv_alu_opy_sel == 1'b1) ? cv_ir : cv_dy_out;
     ALU my_alu(
         .SEL(cv_alu_sel),
@@ -355,7 +346,7 @@ module pipeline_cpu(
     always_comb begin
         case (cv_scr_addr_sel)
             2'h0: scr_addr <= cv_dy_out;
-            2'h1: scr_addr <= cv_ir[7:0];
+            2'h1: scr_addr <= cv_ir;
             2'h2: scr_addr <= sp_data_out;
             default: scr_addr <= (sp_data_out - 8'b1); // not sure if this works
         endcase
@@ -427,11 +418,13 @@ module pipeline_cpu(
         .instr_type(cv_branch_type),
         .branch_taken(bc_branch_taken),
         .reset(rst),
-        .interrupt(interrupt),
+        .interrupt(input_interrupt),
+        .interrupt_flag(flg_i),
         
         .imem_addr_mux(mem_stall),
         .fetch_latch_stall(fetch_reg_stall),
         .dec_nop(pipeline_control_nop),
+        .dec_int(pipeline_control_int),
         .pc_inc(pc_inc),
         .pc_load(pc_load),
         .pc_reset(pc_reset),
@@ -442,9 +435,9 @@ module pipeline_cpu(
     
     always_comb begin
         case(wb_rf_wr_sel)
-            2'h0: reg_data_in    <= wb_result;
-            2'h1: reg_data_in    <= wb_scr;
-            2'h2: reg_data_in    <= wb_sp;
+            2'h0: reg_data_in <= wb_result;
+            2'h1: reg_data_in <= wb_scr;
+            2'h2: reg_data_in <= wb_sp;
             default: reg_data_in <= wb_in;
         endcase
     end
@@ -461,9 +454,9 @@ endmodule
 
 /* write back reg */
 module writeback_reg(
-    input             rst,
-    input logic       clk,
-    input logic       in_write,
+    input rst,
+    input logic clk,
+    input logic in_write,
     input logic [7:0] in_result,
     input logic [7:0] in_immed_val,
     input logic [7:0] in_in,
@@ -471,14 +464,14 @@ module writeback_reg(
     input logic [4:0] in_reg_addr,
     input logic [7:0] in_scr,
     input logic [7:0] in_sp,
-    output reg        out_write,
-    output reg  [7:0] out_result,
-    output reg  [7:0] out_immed_val,
-    output reg  [7:0] out_in,
-    output reg  [1:0] out_rf_wr_sel,
-    output reg  [4:0] out_reg_addr,
-    output reg  [7:0] out_scr,
-    output reg  [7:0] out_sp
+    output reg       out_write,
+    output reg [7:0] out_result,
+    output reg [7:0] out_immed_val,
+    output reg [7:0] out_in,
+    output reg [1:0] out_rf_wr_sel,
+    output reg [4:0] out_reg_addr,
+    output reg [7:0] out_scr,
+    output reg [7:0] out_sp
 );
 
 always @ (posedge clk) begin
@@ -488,9 +481,9 @@ always @ (posedge clk) begin
     out_immed_val  <= 0; 
     out_in         <= 0;       
     out_rf_wr_sel  <= 0;
-    out_reg_addr   <= 0;
-    out_scr        <= 0;
-    out_sp         <= 0;
+    out_reg_addr <= 0;
+    out_scr <= 0;
+    out_sp <= 0;
   end
   else begin
       out_write      <= in_write;    
@@ -498,9 +491,9 @@ always @ (posedge clk) begin
       out_immed_val  <= in_immed_val; 
       out_in         <= in_in;       
       out_rf_wr_sel  <= in_rf_wr_sel;
-      out_reg_addr   <= in_reg_addr;
-      out_scr        <= in_scr;
-      out_sp         <= in_sp;
+      out_reg_addr <= in_reg_addr;
+      out_scr <= in_scr;
+      out_sp <= in_sp;
   end
 end
   
