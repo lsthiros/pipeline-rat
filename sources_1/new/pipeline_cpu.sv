@@ -419,10 +419,12 @@ module pipeline_cpu(
         .branch_taken(bc_branch_taken),
         .reset(rst),
         .interrupt(input_interrupt),
+        .interrupt_flag(flg_i),
         
         .imem_addr_mux(mem_stall),
         .fetch_latch_stall(fetch_reg_stall),
         .dec_nop(pipeline_control_nop),
+        .dec_int(pipeline_control_int),
         .pc_inc(pc_inc),
         .pc_load(pc_load),
         .pc_reset(pc_reset),
