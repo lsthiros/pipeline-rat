@@ -45,7 +45,7 @@ module pipeline_control(
     output pc_mux_override
     );
     
-    typedef enum {CHECK, CALL0, CALL1, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, RESET0, RESET1, RETURN0, RETURN1} HazardState;
+    typedef enum {CHECK, CALL0, CALL1, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, INT2, RESET0, RESET1, RETURN0, RETURN1} HazardState;
     
     HazardState current_state = CHECK;
     HazardState nextState = CHECK;
@@ -58,7 +58,7 @@ module pipeline_control(
     wire return_det;
     
     assign dec_nop = (branch_taken || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
-        || (current_state == INT0 || current_state == INT1)
+        || (current_state == INT0 || current_state == INT1 || current_state == INT2)
         || (return_det || current_state == RETURN0 || current_state == RETURN1)
         || (instr_type == 4'h6 || current_state == CALL0 || current_state == CALL1)
         || (current_state == RESET0 || current_state == RESET1)
@@ -81,7 +81,7 @@ module pipeline_control(
             nextState = RESET0;
         end
         else begin
-            if (interrupt) begin
+            if (interrupt && interrupt_flag) begin
                 nextState = INT0;
             end
             else if(current_state == CHECK) begin
@@ -109,6 +109,9 @@ module pipeline_control(
             end
             else if (current_state == INT0) begin
                 nextState = INT1;
+            end
+            else if (current_state == INT1) begin
+                nextState = INT2;
             end
             else if (current_state == RETURN0) begin
                 nextState = RETURN1;

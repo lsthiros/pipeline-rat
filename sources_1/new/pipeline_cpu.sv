@@ -328,7 +328,7 @@ module pipeline_cpu(
     I_FLAG my_i_flag(
         .CLK(clk),
         .I_SET (cv_i_set),
-        .I_CLR (cv_i_clr),
+        .I_CLR (cv_i_clr | rst),
         .I_OUT (flg_i)
     );
     
