@@ -71,7 +71,7 @@ uut: pipeline_cpu
       wait for CLK_period;
       RST_tb <= '0';
       wait for CLK_period * 36;    
-      INT_IN_tb <= '1';
+      INT_IN_tb <= '0';
       wait for CLK_period;
       INT_IN_tb <= '0';
       wait for CLK_period * 500;         
