@@ -155,7 +155,7 @@ module pipeline_cpu(
     always_comb begin
         /* TODO: resolve interrupt case for when it happens during delays */
         if (interrupt) begin
-            rom_address <= 10'h3F;
+            rom_address <= 10'h3FF;
         end
         else if (mem_stall) begin
             rom_address <= pc_delay;
