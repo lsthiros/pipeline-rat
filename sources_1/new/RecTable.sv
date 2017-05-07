@@ -21,13 +21,13 @@
 
 
 module RecTable(
-    input clk,
-    input rst,
-    input [2:0] addr,
-    input [2:0] wr_addr,
-    input update,
-    input taken,
-    output [1:0] rec
+    input wire clk,
+    input wire rst,
+    input wire [2:0] addr,
+    input wire [2:0] wr_addr,
+    input wire update,
+    input wire taken,
+    output wire [1:0] rec
     );
     
     parameter HISTORY_WIDTH = 3;

@@ -21,19 +21,19 @@
 
 
 module PredictionTables(
-    input clk,
-    input rst,
-    input we,
-    input branch_taken,
-    input [9:0] pc,
-    input [9:0] old_pc,
-    input update_pc,
-    input evict,
-    input [2:0] evict_idx,
-    input [2:0] prev_history,
-    input update_valid,
-    input [2:0] update_history,
-    output prediction
+    input wire clk,
+    input wire rst,
+    input wire we,
+    input wire branch_taken,
+    input wire [9:0] pc,
+    input wire [9:0] old_pc,
+    input wire update_pc,
+    input wire evict,
+    input wire [2:0] evict_idx,
+    input wire [2:0] prev_history,
+    input wire update_valid,
+    input wire [2:0] update_history,
+    output wire prediction
     );
     
     parameter ENTRY_WIDTH = 3;

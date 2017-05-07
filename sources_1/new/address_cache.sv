@@ -75,9 +75,11 @@ module cache(
 	input wire we,
 	input wire branch_taken,
 	input wire [9:0] pc,
-	input wire [9:0]	update_pc,
-	output logic [2:0] history,
-	output logic read_hit
+	input wire [9:0] update_pc,
+	output logic [2:0] read_history,
+	output logic read_hit,
+	output logic [2:0] update_history,
+	output logic evict
 	);
 	parameter ENTRY_WIDTH = 4;
 	parameter ENTRY_DEPTH = 1 << ENTRY_WIDTH;
@@ -116,35 +118,19 @@ module cache(
 	assign out_tag = ind_tag[integer'(index) ];
 	assign write_hit = (in_tag == out_tag) && ind_valid_bit[integer'(index)];
 
-	always @ ( posedge(clk) ) begin
-		if (write_hit && we) begin	// chache hit
-			ind_history_write[integer'(index) ] <= 1;
-			ind_tag_we [integer'(index) ]<= 1;
-			ind_rst[integer'(index) ] <= 0;
-		end
-		else begin
-			if (~write_hit && we) begin  // cache miss
-				ind_history_write[integer'(index) ] <= 0;
-				ind_tag_we [integer'(index) ]<= 1;
-				ind_rst [integer'(index) ] <= (index - 1);
-			end
-			else begin	// no cache write
-				ind_history_write[integer'(index) ] <= 0;
-				ind_tag_we[integer'(index) ] <= 0;
-				ind_rst [integer'(index) ]<= 0;
-			end
-		end
-	end
-
+    generate
+        genvar idx;
+        for (idx = 0; idx < ENTRY_DEPTH; idx++) begin: CACHE_CONTROL_WIRING
+             assign ind_history_write[integer'(idx)] = write_hit && we && integer'(idx) == integer'(index);
+             assign ind_tag_we[integer'(idx)] = we && integer'(idx) == integer'(index);
+             assign ind_rst[integer'(idx)] = (~write_hit && we && integer'(idx) == integer'(index)) | rst;
+        end
+    endgenerate
 
 	// read section
-	wire read_index = pc[3:0];
-	assign read_hit = (in_tag == out_tag) && ind_valid_bit[integer'(index)];
-	assign history = ind_history[integer'(read_index)];
-
-
-
-
-
-
+	wire [3:0] read_index = pc[3:0];
+	assign read_hit = (in_tag == out_tag) && ind_valid_bit[integer'(read_index)];
+	assign read_history = ind_history[integer'(read_index)];
+	assign evict = ~write_hit && we;
+	assign update_history = ind_history[integer'(index)];
 endmodule
