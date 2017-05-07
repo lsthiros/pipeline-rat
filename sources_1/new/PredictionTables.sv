@@ -29,18 +29,16 @@ module PredictionTables(
     input wire [9:0] old_pc,
     input wire update_pc,
     input wire evict,
-    input wire [2:0] evict_idx,
     input wire [2:0] prev_history,
-    input wire update_valid,
     input wire [2:0] update_history,
     output wire prediction
     );
     
-    parameter ENTRY_WIDTH = 3;
+    parameter ENTRY_WIDTH = 4;
     parameter ENTRY_DEPTH = 1 << ENTRY_WIDTH;
     
-    wire table_index = pc[2:0];
-    wire update_table_index = old_pc[2:0];
+    wire table_index = pc[3:0];
+    wire update_table_index = old_pc[3:0];
     
     logic ind_rst [0:ENTRY_DEPTH - 1];
     logic [1:0] ind_prediction [0:ENTRY_DEPTH - 1];
@@ -48,9 +46,9 @@ module PredictionTables(
     
     generate
         genvar idx;
-        for (idx = 0; idx < 8; idx++) begin
+        for (idx = 0; idx < ENTRY_DEPTH; idx++) begin
             assign ind_update[integer'(idx)] = (integer'(old_pc) == integer'(idx) && we);
-            assign ind_rst[integer'(idx)] = (integer'(evict_idx) == integer'(idx) || rst);
+            assign ind_rst[integer'(idx)] = (integer'(table_index) == integer'(idx) && evict || rst);
         end
     endgenerate
     
