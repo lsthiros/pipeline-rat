@@ -1,43 +1,42 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company:
+// Engineer:
+//
 // Create Date: 05/06/2017 06:24:49 PM
-// Design Name: 
+// Design Name:
 // Module Name: BranchPredictor
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
 module BranchPredictor(
     input wire clk,
     input wire rst,
-    input wire [9:0] pc,
-    input wire [9:0] update_pc,
-    input wire branch_taken,
-    input wire update_entry,
-    input wire we,
-    output wire prediction
+    input wire [9:0] pc, //current pc
+    input wire [9:0] update_pc, // pc of the branch being writen
+    input wire branch_taken, // is the branch taken or not
+    input wire we, //write the new branch outcome based on when a branch is taken
+    output wire prediction // Notes: should the branch be taken or not
     );
-    
+
     wire evict;
     wire [2:0] update_history;
     wire [2:0] read_history;
     wire read_hit;
     wire table_prediction;
-    
-    cache myCache(
+
+    Cache myCache (
     .clk(clk),
     .rst(rst),
     .we(we),
@@ -49,7 +48,7 @@ module BranchPredictor(
     .update_history(update_history),
     .evict(evict)
     );
-    
+
     PredictionTables myTables(
         .clk(clk),
         .rst(rst),
@@ -62,6 +61,6 @@ module BranchPredictor(
         .update_history(update_history),
         .prediction(table_prediction)
     );
-    
+
     assign prediction = table_prediction && ~evict;
 endmodule

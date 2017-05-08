@@ -1,22 +1,22 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company:
+// Engineer:
+//
 // Create Date: 05/02/2017 02:46:24 PM
-// Design Name: 
+// Design Name:
 // Module Name: PredictionTables
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -33,17 +33,17 @@ module PredictionTables(
     input wire [2:0] update_history,
     output wire prediction
     );
-    
+
     parameter ENTRY_WIDTH = 4;
     parameter ENTRY_DEPTH = 1 << ENTRY_WIDTH;
-    
+
     wire table_index = pc[3:0];
     wire update_table_index = old_pc[3:0];
-    
+
     logic ind_rst [0:ENTRY_DEPTH - 1];
     logic [1:0] ind_prediction [0:ENTRY_DEPTH - 1];
     logic ind_update [0:ENTRY_DEPTH - 1];
-    
+
     generate
         genvar idx;
         for (idx = 0; idx < ENTRY_DEPTH; idx++) begin
@@ -51,7 +51,7 @@ module PredictionTables(
             assign ind_rst[integer'(idx)] = (integer'(table_index) == integer'(idx) && evict || rst);
         end
     endgenerate
-    
+
     RecTable tables [0:ENTRY_DEPTH - 1] (
         .clk(clk),
         .rst(ind_rst),
@@ -61,6 +61,7 @@ module PredictionTables(
         .wr_addr(update_history),
         .taken(branch_taken)
     );
-    
+
+
     assign prediction = ind_prediction[integer'(table_index)][1];
 endmodule
