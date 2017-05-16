@@ -1,22 +1,22 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
+// Company:
 // Engineer: Christopher Gerdom
-// 
+//
 // Create Date: 04/18/2017 09:09:28 PM
-// Design Name: 
+// Design Name:
 // Module Name: control_vector_reg
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 //interface control_vector;
@@ -44,7 +44,7 @@
 //	logic IO_STRB      ;
 //	logic BRANCH_TYPE  ;
 //	logic rst          ;
-	
+
 //endinterface:control_vector
 
 module control_vector_reg(
@@ -103,7 +103,7 @@ module control_vector_reg(
 	input logic interupt,
 	input logic clk,
 	input logic nop,
-	
+
 	// instruction data
 	input  logic[7:0] in_IR,
 	output logic[7:0] out_IR,
@@ -117,7 +117,13 @@ module control_vector_reg(
 	output logic[4:0] out_WB_ADDR,
 	// program counters
 	input logic[9:0] in_PC,
-	output logic[9:0] out_PC	
+	output logic[9:0] out_PC,
+	// branch prediction
+	output logic [9:0] alt_out,
+	input logic [9:0] alt_in,
+
+	input logic branch_taken_in,
+	output logic branch_taken_out
 );
 
 
@@ -154,6 +160,8 @@ if (in_rst) begin
     out_I_CLR       <= 0;
     out_IO_STRB     <= 0;
     out_BRANCH_TYPE <= 0;
+		branch_taken_out<= 0;
+		alt_out 				<= 0;
 end
 else if(interupt == 1'b1) begin
 	out_PC_LD       <= 1;
@@ -181,6 +189,8 @@ else if(interupt == 1'b1) begin
 	out_BRANCH_TYPE <= 0;
 	out_rst         <= 0;
 	out_PC <= in_PC - 1;
+	branch_taken_out<= 0;	//TODO: make this the right case for interupt
+	alt_out 				<= 0;
 // When nop
 end else if(nop == 1'b0) begin
 	out_PC_LD       <= in_PC_LD        ;
@@ -207,6 +217,8 @@ end else if(nop == 1'b0) begin
     out_IO_STRB     <= in_IO_STRB      ;
     out_BRANCH_TYPE <= in_BRANCH_TYPE  ;
     out_rst         <= in_rst          ;
+		branch_taken_out<= branch_taken_in;
+		alt_out 				<= alt_in;
 end else begin
 	out_PC_LD       <= 0;
 	out_PC_INC      <= 0;
@@ -232,7 +244,8 @@ end else begin
 	out_IO_STRB     <= 0;
 	out_BRANCH_TYPE <= 4'b0000;
 	out_rst         <= 0;
-                    
+	branch_taken_out<= 0;
+	alt_out 				<= 0;
 
 end
 end
