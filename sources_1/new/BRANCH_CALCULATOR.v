@@ -43,12 +43,12 @@ module BRANCH_CALCULATOR(
     input wire C,
     input wire Z,
     input wire branch_predicted,
-    output reg branch_miss,
+    output wire branch_miss,
     output  reg BRANCH_TAKEN
     );
 
 
-    assign branch_miss = branch_predicted xor BRANCH_TAKEN;
+    assign branch_miss = branch_predicted ^ BRANCH_TAKEN;
 
     always @ ( BRANCH_TYPE or C or Z)
 

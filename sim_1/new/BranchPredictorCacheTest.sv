@@ -34,7 +34,7 @@ module BranchPredictorCacheTest(
     wire [2:0] read_history;
     wire evict;
     
-    cache myCache(
+    Cache myCache(
         .rst(rst),
         .clk(clk),
         .we(we),

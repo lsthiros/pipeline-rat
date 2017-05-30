@@ -21,56 +21,60 @@
 
 
 module pipeline_control(
-    input clk,
-    input [4:0] reg_a,
-    input [4:0] reg_b,
-    input [4:0] reg_wb,
-    input reg_wb_en,
-    input [4:0] reg_ex,
-    input reg_ex_en,
-    input [3:0] instr_type,
-    input branch_taken,
-    input reset,
-    input interrupt,
-    input interrupt_flag,
-    input a_read,
-    input b_read,
-    output imem_addr_mux,
-    output fetch_latch_stall,
-    output dec_nop,
-    output dec_int,
-    output pc_inc,
-    output pc_load,
-    output pc_reset,
-    output pc_mux_override
+    input wire clk,
+    input wire [4:0] reg_a,
+    input wire [4:0] reg_b,
+    input wire [4:0] reg_wb,
+    input wire reg_wb_en,
+    input wire [4:0] reg_ex,
+    input wire reg_ex_en,
+    input wire [3:0] instr_type,
+    input wire branch_miss,
+    input wire predicted_branch_taken,
+    input wire reset,
+    input wire interrupt,
+    input wire interrupt_flag,
+    input wire a_read,
+    input wire b_read,
+    input wire [1:0] instr_pc_mux_sel,
+    output wire imem_addr_mux,
+    output wire fetch_latch_stall,
+    output wire dec_nop,
+    output wire dec_int,
+    output wire pc_inc,
+    output wire pc_load,
+    output wire pc_reset,
+    output logic [2:0] pc_mux_sel
     );
     
-    typedef enum {CHECK, CALL0, CALL1, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, INT2, RESET0, RESET1, RETURN0, RETURN1} HazardState;
+    typedef enum {CHECK, CALL0, CALL1, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, INT2, RESET0, RESET1, RETURN0, RETURN1,
+        PREDICT_BRANCH} HazardState;
     
     HazardState current_state = CHECK;
     HazardState nextState = CHECK;
     
     wire raw_ex = ((reg_a == reg_ex) && a_read || (reg_b == reg_ex) && b_read) && reg_ex_en;
     wire raw_wb = ((reg_a == reg_wb) && a_read || (reg_b == reg_wb) && b_read) && reg_wb_en;
-    wire call_det;
+    wire call_det = instr_type == 4'h6;
+    wire brn_det;
     wire pc_stall;
     wire mem_stall;
     wire return_det;
     
-    assign dec_nop = (branch_taken || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
+    assign dec_nop = (branch_miss || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
         || (current_state == INT0 || current_state == INT1 || current_state == INT2)
         || (return_det || current_state == RETURN0 || current_state == RETURN1)
-        || (instr_type == 4'h6 || current_state == CALL0 || current_state == CALL1)
+        || (call_det || current_state == CALL0 || current_state == CALL1)
         || (current_state == RESET0 || current_state == RESET1)
-        || (current_state == RAW_EX || raw_wb || raw_ex);
+        || (current_state == RAW_EX || raw_wb || raw_ex)
+        || (predicted_branch_taken);
     assign dec_int = (interrupt && interrupt_flag) && (current_state == CHECK);
     assign pc_stall = (raw_ex || current_state == RAW_EX || raw_wb || return_det);
-    assign mem_stall = pc_stall;
-    assign fetch_latch_stall = pc_stall; /*was fetch_reg_stall*/
+    assign mem_stall = pc_stall || predicted_branch_taken;
+    assign fetch_latch_stall = pc_stall || predicted_branch_taken; /*was fetch_reg_stall*/
     assign pc_reset = reset;
     assign pc_inc = (!pc_reset && !pc_load && !pc_stall);
-    assign pc_load = branch_taken || return_det || current_state == INT0;
-    assign pc_mux_override = 0;
+    assign pc_load = (predicted_branch_taken || branch_miss || call_det || return_det || current_state == INT0);
     assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9);
     assign imem_addr_mux = pc_stall;
     
@@ -91,11 +95,14 @@ module pipeline_control(
                 else if (instr_type == 4'h6) begin
                     nextState = CALL0;
                 end
-                else if (branch_taken && !return_det) begin
+                else if (branch_miss && !return_det) begin
                     nextState = BRANCH_MIS0;
                 end
                 else if (return_det) begin
                     nextState = RETURN0;
+                end
+                else if (predicted_branch_taken) begin
+                    nextState = PREDICT_BRANCH;
                 end
                 else begin
                     nextState = CHECK;
@@ -122,6 +129,16 @@ module pipeline_control(
             else begin
                 nextState = CHECK;
             end
+        end
+        
+        if (branch_miss) begin
+            pc_mux_sel = 3'h3;
+        end
+        else if (predicted_branch_taken) begin
+            pc_mux_sel = 3'h4;
+        end
+        else begin
+            pc_mux_sel = {1'h0, instr_pc_mux_sel};
         end
     end
     
