@@ -36,7 +36,7 @@ module pipeline_cpu(
     wire pc_load;
     wire pc_inc;
     wire pc_reset;
-    logic [1:0] pc_mux_sel;
+    logic [2:0] pc_mux_sel;
     wire [9:0] pc_count;
 
     wire mem_stall;
@@ -48,9 +48,14 @@ module pipeline_cpu(
     wire [17:0] rom_instr;
 
     wire fetch_reg_stall;
+    wire fetch_branch_prediction;
 
     wire [17:0] fetch_instr_out;
     wire [9:0]  fetch_addr_out;
+    wire [9:0] fetch_alt_in;
+    wire [9:0] fetch_alt_out;
+    
+    wire bc_branch_miss;
 
     /* Register file interface */
     logic [7:0] reg_data_in;
@@ -114,6 +119,8 @@ module pipeline_cpu(
     wire [4:0] cv_wb_addr;
     wire [9:0] cv_dest_addr;
     wire [9:0] cv_pc_out;
+    wire [9:0] cv_alt_addr_out;
+    wire cv_branch_prediction;
 
     wire pipeline_control_int;
     wire pipeline_control_reset;
@@ -131,14 +138,8 @@ module pipeline_cpu(
     wire [7:0] wb_scr;
     wire [7:0] wb_sp;
 
-    always_comb begin
-        if (pipeline_control_pc_mux_override) begin
-            pc_mux_sel = 2'h1;
-        end
-        else begin
-            pc_mux_sel = cv_pc_mux_sel;
-        end
-        end
+    logic branch_table_we;
+    wire branch_prediction;
 
     PC my_pc (
         .CLK        (clk),
@@ -146,8 +147,10 @@ module pipeline_cpu(
         .PC_LD    (pc_load),
         .RST        (pc_reset),
         .PC_MUX_SEL (pc_mux_sel),
-        .FROM_IMMED (pc_immed_address),
+        .FROM_IMMED (cv_dest_addr),
         .FROM_STACK (scr_data_out),
+        .FROM_ALTERNATE (cv_alt_addr_out),
+        .FROM_PREDICTOR (fetch_alt_in),
         .PC_COUNT   (pc_count)
     );
 
@@ -178,9 +181,14 @@ module pipeline_cpu(
         .addr     (pc_delay),
         .stall    (fetch_reg_stall),
         .addr_out (fetch_addr_out),
-        .instr_out (fetch_instr_out)
+        .instr_out (fetch_instr_out),
+        .branch_taken_in(branch_prediction),
+        .branch_taken_out(fetch_branch_prediction),
+        .alt_in(fetch_alt_in),
+        .alt_out(fetch_alt_out)
     );
 
+    assign fetch_alt_in = (branch_prediction) ? rom_instr[12:3] : pc_delay + 1;
     assign reg_addr_x = fetch_instr_out[12:8];
     assign reg_addr_y = fetch_instr_out[7:3];
 
@@ -296,7 +304,14 @@ module pipeline_cpu(
         .out_PC (cv_pc_out),
 
         .in_dest_addr(fetch_instr_out[12:3]),
-        .out_dest_addr(cv_dest_addr)
+        .out_dest_addr(cv_dest_addr),
+        
+        /* Branch predictor stuff */
+        .alt_out(cv_alt_addr_out),
+        .alt_in(fetch_alt_out),
+        
+        .branch_taken_in(fetch_branch_prediction),
+        .branch_taken_out(cv_branch_prediction)
     );
 
     assign port_id = cv_ir;
@@ -313,6 +328,7 @@ module pipeline_cpu(
 
     Flags my_flags(
         .CLK(clk),
+        .RST(rst),
         .FLG_C_SET(cv_flg_c_set),
         .FLG_C_CLR(cv_flg_c_clr),
         .FLG_C_LD(cv_flg_c_ld),
@@ -379,7 +395,8 @@ module pipeline_cpu(
         .BRANCH_TYPE(cv_branch_type),
         .C(flg_c),
         .Z(flg_z),
-        .BRANCH_TAKEN(bc_branch_taken)
+        .branch_predicted(cv_branch_prediction),
+        .branch_miss(bc_branch_miss)
     );
 
     wire [7:0] wb_result;
@@ -416,10 +433,11 @@ module pipeline_cpu(
         .reg_ex(cv_wb_addr),
         .reg_ex_en(cv_rf_wr),
         .instr_type(cv_branch_type),
-        .branch_taken(bc_branch_taken),
+        .predicted_branch_taken(branch_prediction),
         .reset(rst),
         .interrupt(input_interrupt),
         .interrupt_flag(flg_i),
+        .branch_miss(bc_branch_miss),
 
         .imem_addr_mux(mem_stall),
         .fetch_latch_stall(fetch_reg_stall),
@@ -428,15 +446,12 @@ module pipeline_cpu(
         .pc_inc(pc_inc),
         .pc_load(pc_load),
         .pc_reset(pc_reset),
-        .pc_mux_override(pipeline_control_pc_mux_override),
+        .pc_mux_sel(pc_mux_sel),
+        .instr_pc_mux_sel(cv_pc_mux_sel),
         .a_read(pipeline_control_a_read),
         .b_read(pipeline_control_b_read)
     );
 
-
-    logic branch_table_we;
-    wire branch_prediction;
-    assign branch_prediction = 0;
 
 
 
@@ -462,33 +477,10 @@ module pipeline_cpu(
       .rst(rst),
       .pc(pc_delay),
       .update_pc(cv_pc_out),
-      .branch_taken(bc_branch_taken), // from BRANCH_CALCULATOR
+      .branch_taken(cv_branch_prediction), // from BRANCH_CALCULATOR
       .we(branch_table_we), // TODO: from pipeline control
       .prediction(branch_prediction) //TODO: to pipleline control
       );
-
-      //pc_load mux select
-      wire pc_ld_sel;
-      assign pc_ld_sel = 0;
-    always_comb begin
-      case(pc_ld_sel)
-            1'h0: pc_immed_address    <= cv_dest_addr;
-            1'h1: pc_immed_address    <= fetch_instr_out[12:3]; // TODO: dest bits of instruction
-            default: pc_immed_address <= cv_dest_addr;
-      endcase
-    end
-
-
-
-
-
-
-
-
-
-
-
-
 
     always_comb begin
         case(wb_rf_wr_sel)

@@ -15,10 +15,11 @@ entity PC is
            PC_INC      : in  STD_LOGIC;
            PC_LD       : in  STD_LOGIC;
            RST         : in  STD_LOGIC;
-           PC_MUX_SEL  : in  STD_LOGIC_VECTOR (1 downto 0);
+           PC_MUX_SEL  : in  STD_LOGIC_VECTOR (2 downto 0);
            FROM_IMMED  : in  STD_LOGIC_VECTOR (9 downto 0);
            FROM_STACK  : in  STD_LOGIC_VECTOR (9 downto 0);
            FROM_ALTERNATE : in STD_LOGIC_VECTOR (9 downto 0);
+           FROM_PREDICTOR : in STD_LOGIC_VECTOR (9 downto 0);
            PC_COUNT    : out STD_LOGIC_VECTOR (9 downto 0));
 end PC;
 
@@ -38,7 +39,8 @@ component PC_MUX is
     Port ( FROM_IMMED : in  STD_LOGIC_VECTOR (9 downto 0);
            FROM_STACK : in  STD_LOGIC_VECTOR (9 downto 0);
            FROM_ALTERNATE : in STD_LOGIC_VECTOR (9 downto 0);
-           MUX_SEL    : in  STD_LOGIC_VECTOR (1 downto 0);
+           FROM_PREDICTOR : in STD_LOGIC_VECTOR (9 downto 0);
+           MUX_SEL    : in  STD_LOGIC_VECTOR (2 downto 0);
            MUX_OUT    : out STD_LOGIC_VECTOR (9 downto 0));
 end component;
 
@@ -58,6 +60,7 @@ mux : PC_MUX
         FROM_IMMED => FROM_IMMED,
         FROM_STACK => FROM_STACK,
         FROM_ALTERNATE => FROM_ALTERNATE,
+        FROM_PREDICTOR => FROM_PREDICTOR,
         MUX_SEL    => PC_MUX_SEL,
         MUX_OUT    => MUX_OUT_sig);
         

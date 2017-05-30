@@ -18,6 +18,7 @@ entity Flags is
            FLG_SHAD_LD : in STD_LOGIC;
            C           : in STD_LOGIC;
            Z           : in STD_LOGIC;
+           RST         : in STD_LOGIC;
            C_FLAG      : out STD_LOGIC;
            Z_FLAG      : out STD_LOGIC);
 end Flags;
@@ -37,6 +38,7 @@ signal s_z_in  : STD_LOGIC;
 
 signal s_c_out : STD_LOGIC;
 signal s_c_in  : STD_LOGIC;
+signal s_c_clr : STD_LOGIC;
 
 signal s_shad_c_out : STD_LOGIC;
 signal s_shad_z_out : STD_LOGIC;
@@ -48,7 +50,7 @@ Z_REG : FlagReg
         IN_FLAG  => s_z_in,
         LD       => FLG_Z_LD,
         SET      => '0',
-        CLR      => '0',
+        CLR      => RST,
         CLK      => CLK,
         OUT_FLAG => s_z_out);
         
@@ -57,7 +59,7 @@ C_REG : FlagReg
         IN_FLAG  => s_c_in,
         LD       => FLG_C_LD,
         SET      => FLG_C_SET,
-        CLR      => FLG_C_CLR,
+        CLR      => s_c_clr,
         CLK      => CLK,
         OUT_FLAG => s_c_out);
         
@@ -66,7 +68,7 @@ SHAD_Z : FlagReg
         IN_FLAG  => s_z_out,
         LD       => FLG_SHAD_LD,
         SET      => '0',
-        CLR      => '0',
+        CLR      => RST,
         CLK      => CLK,
         OUT_FLAG => s_shad_z_out);
         
@@ -75,10 +77,11 @@ SHAD_C : FlagReg
         IN_FLAG  => s_c_out,
         LD       => FLG_SHAD_LD,
         SET      => '0',
-        CLR      => '0',
+        CLR      => RST,
         CLK      => CLK,
         OUT_FLAG => s_shad_c_out);
         
+s_c_clr <= RST or FLG_C_CLR;
 s_c_in <= C when FLG_LD_SEL = '0' else
           s_shad_c_out when FLG_LD_SEL = '1' else
           '0';
