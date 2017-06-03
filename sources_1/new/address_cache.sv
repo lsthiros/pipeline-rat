@@ -87,7 +87,6 @@ module Cache(
 	wire ind_valid_bit[0:ENTRY_DEPTH - 1];
 	wire [5:0] in_tag = pc[9:4];
 	wire [3:0] index = update_pc[3:0];
-	wire valid_bit;
 	logic ind_history_write  [0:ENTRY_DEPTH - 1];
 	logic ind_tag_we[0:ENTRY_DEPTH - 1];
 	logic ind_rst [0:ENTRY_DEPTH - 1];

@@ -38,6 +38,7 @@ module pipeline_cpu(
     wire pc_reset;
     logic [2:0] pc_mux_sel;
     wire [9:0] pc_count;
+    wire [9:0] pc_prediction;
 
     wire mem_stall;
 
@@ -56,6 +57,7 @@ module pipeline_cpu(
     wire [9:0] fetch_alt_out;
     
     wire bc_branch_miss;
+    wire bc_branch_taken;
 
     /* Register file interface */
     logic [7:0] reg_data_in;
@@ -150,7 +152,7 @@ module pipeline_cpu(
         .FROM_IMMED (cv_dest_addr),
         .FROM_STACK (scr_data_out),
         .FROM_ALTERNATE (cv_alt_addr_out),
-        .FROM_PREDICTOR (fetch_alt_in),
+        .FROM_PREDICTOR (pc_prediction),
         .PC_COUNT   (pc_count)
     );
 
@@ -187,8 +189,9 @@ module pipeline_cpu(
         .alt_in(fetch_alt_in),
         .alt_out(fetch_alt_out)
     );
-
-    assign fetch_alt_in = (branch_prediction) ? rom_instr[12:3] : pc_delay + 1;
+    wire [12:3] rom_dest = rom_instr[12:3];
+    assign fetch_alt_in = (branch_prediction) ? pc_delay + 1 : rom_dest;
+    assign pc_prediction = (branch_prediction) ? rom_dest : pc_delay + 1;
     assign reg_addr_x = fetch_instr_out[12:8];
     assign reg_addr_y = fetch_instr_out[7:3];
 
@@ -390,13 +393,13 @@ module pipeline_cpu(
         .DATA_OUT(sp_data_out)
     );
 
-    wire bc_branch_taken;
     BRANCH_CALCULATOR my_branch_calculator(
         .BRANCH_TYPE(cv_branch_type),
         .C(flg_c),
         .Z(flg_z),
         .branch_predicted(cv_branch_prediction),
-        .branch_miss(bc_branch_miss)
+        .branch_miss(bc_branch_miss),
+        .BRANCH_TAKEN(bc_branch_taken)
     );
 
     wire [7:0] wb_result;
@@ -477,7 +480,7 @@ module pipeline_cpu(
       .rst(rst),
       .pc(pc_delay),
       .update_pc(cv_pc_out),
-      .branch_taken(cv_branch_prediction), // from BRANCH_CALCULATOR
+      .branch_taken(bc_branch_taken), // from BRANCH_CALCULATOR
       .we(branch_table_we), // TODO: from pipeline control
       .prediction(branch_prediction) //TODO: to pipleline control
       );
