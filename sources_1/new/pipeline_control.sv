@@ -48,12 +48,13 @@ module pipeline_control(
     );
     
     typedef enum {CHECK, CALL0, CALL1, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, INT2, RESET0, RESET1, RETURN0, RETURN1,
-        PREDICT_BRANCH0, PREDICT_BRANCH1} HazardState;
+        PREDICT_BRANCH} HazardState;
     
     HazardState current_state = CHECK;
     HazardState nextState = CHECK;
+    reg prediction_loaded = 0;
     
-    wire valid_predicted_branch = predicted_branch_taken && current_state != PREDICT_BRANCH1;
+    wire valid_predicted_branch = predicted_branch_taken && current_state != PREDICT_BRANCH && !prediction_loaded;
     
     wire raw_ex = ((reg_a == reg_ex) && a_read || (reg_b == reg_ex) && b_read) && reg_ex_en;
     wire raw_wb = ((reg_a == reg_wb) && a_read || (reg_b == reg_wb) && b_read) && reg_wb_en;
@@ -68,9 +69,9 @@ module pipeline_control(
         || (call_det || current_state == CALL0 || current_state == CALL1)
         || (current_state == RESET0 || current_state == RESET1)
         || (current_state == RAW_EX || raw_wb || raw_ex)
-        || (current_state == PREDICT_BRANCH0);
+        || (current_state == PREDICT_BRANCH);
     assign dec_int = (interrupt && interrupt_flag) && (current_state == CHECK);
-    assign pc_stall = (raw_ex || current_state == RAW_EX || raw_wb || return_det);
+    assign pc_stall = (((raw_ex || raw_wb) && !valid_predicted_branch) || current_state == RAW_EX || return_det);
     /* This is memory stall... */
     assign imem_addr_mux = pc_stall || valid_predicted_branch;
     assign fetch_latch_stall = pc_stall || valid_predicted_branch; /*was fetch_reg_stall*/
@@ -89,7 +90,7 @@ module pipeline_control(
             if (interrupt && interrupt_flag) begin
                 nextState = INT0;
             end
-            else if(current_state == CHECK || current_state == PREDICT_BRANCH1) begin
+            else if(current_state == CHECK) begin
                 if (raw_ex) begin
                     nextState = RAW_EX;
                 end
@@ -103,7 +104,7 @@ module pipeline_control(
                     nextState = RETURN0;
                 end
                 else if (valid_predicted_branch) begin
-                    nextState = PREDICT_BRANCH0;
+                    nextState = PREDICT_BRANCH;
                 end
                 else begin
                     nextState = CHECK;
@@ -127,9 +128,6 @@ module pipeline_control(
             else if (current_state == CALL0) begin
                 nextState = CALL1;
             end
-            else if (current_state == PREDICT_BRANCH0) begin
-                nextState = PREDICT_BRANCH1;
-            end
             else begin
                 nextState = CHECK;
             end
@@ -149,6 +147,15 @@ module pipeline_control(
     always_ff @ (posedge clk)
     begin
         current_state <= nextState;
+        if (reset) begin
+            prediction_loaded <= 0;
+        end
+        else if (nextState == RAW_EX) begin
+            prediction_loaded <= 1;
+        end
+        else if (current_state == CHECK) begin
+            prediction_loaded <=0;
+        end
     end
 
 endmodule
