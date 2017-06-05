@@ -207,7 +207,7 @@ module pipeline_cpu(
         .OPCODE_HI_5 (fetch_instr_out[17:13]),
         .OPCODE_LO_2 (fetch_instr_out[1:0]),
         .INT         (pipeline_control_int),
-        .RESET       (pipeline_control_reset),
+        .RST       (pipeline_control_reset),
         .PC_LD(dec_pc_ld),
         .PC_INC(dec_pc_inc),
         .PC_MUX_SEL (dec_pc_mux_sel),
@@ -396,7 +396,8 @@ module pipeline_cpu(
         .C(flg_c),
         .Z(flg_z),
         .branch_predicted(cv_branch_prediction),
-        .branch_miss(bc_branch_miss)
+        .branch_miss(bc_branch_miss),
+        .BRANCH_TAKEN(bc_branch_taken)
     );
 
     wire [7:0] wb_result;
@@ -477,7 +478,7 @@ module pipeline_cpu(
       .rst(rst),
       .pc(pc_delay),
       .update_pc(cv_pc_out),
-      .branch_taken(cv_branch_prediction), // from BRANCH_CALCULATOR
+      .branch_taken(bc_branch_taken), // from BRANCH_CALCULATOR
       .we(branch_table_we), // TODO: from pipeline control
       .prediction(branch_prediction) //TODO: to pipleline control
       );

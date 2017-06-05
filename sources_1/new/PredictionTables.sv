@@ -41,7 +41,7 @@ module PredictionTables(
     wire update_table_index = old_pc[3:0];
 
     logic ind_rst [0:ENTRY_DEPTH - 1];
-    logic [1:0] ind_prediction [0:ENTRY_DEPTH - 1];
+    logic [ENTRY_DEPTH - 1:0][1:0] ind_prediction ;
     logic ind_update [0:ENTRY_DEPTH - 1];
 
     generate

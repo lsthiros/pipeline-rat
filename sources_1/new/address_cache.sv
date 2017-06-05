@@ -49,7 +49,7 @@ module HisBlock(
 	input wire rst,
 	input wire we,
 	input wire branch_taken,
-	output logic [2:0] history
+	output logic [2:0] history 
 	);
 
 	always @ ( posedge(clk) ) begin
@@ -83,17 +83,27 @@ module Cache(
 	);
 	parameter ENTRY_WIDTH = 4;
 	parameter ENTRY_DEPTH = 1 << ENTRY_WIDTH;
-	wire [5:0] ind_tag[0:ENTRY_DEPTH - 1];
-	wire ind_valid_bit[0:ENTRY_DEPTH - 1];
+	wire [ENTRY_DEPTH - 1:0][5:0] ind_tag;
+	wire [ENTRY_DEPTH - 1:0]ind_valid_bit;
 	wire [5:0] in_tag = pc[9:4];
 	wire [3:0] index = update_pc[3:0];
 	wire valid_bit;
 	logic ind_history_write  [0:ENTRY_DEPTH - 1];
 	logic ind_tag_we[0:ENTRY_DEPTH - 1];
 	logic ind_rst [0:ENTRY_DEPTH - 1];
-	logic [2:0] ind_history [0:ENTRY_DEPTH - 1];
+	logic [ENTRY_DEPTH - 1:0][2:0] ind_history ;
 	logic [5:0] out_tag;
 
+
+
+	HisBlock histable [0:ENTRY_DEPTH - 1] (
+		.clk(clk),
+		.rst(ind_rst),
+		.we(ind_history_write),
+		.branch_taken(~rst && branch_taken),
+		.history(ind_history)
+	);
+	
 	TagBlock tagtable [0:ENTRY_DEPTH - 1] (
 		.clk(clk),
 		.in_tag(in_tag),
@@ -103,13 +113,7 @@ module Cache(
 		.tag(ind_tag)
 	);
 
-	HisBlock histable [0:ENTRY_DEPTH - 1] (
-		.clk(clk),
-		.rst(ind_rst),
-		.we(ind_history_write),
-		.branch_taken(~rst && branch_taken),
-		.history(ind_history)
-	);
+
 
 
 	//sync write section
@@ -132,5 +136,5 @@ module Cache(
 	assign read_hit = (in_tag == out_tag) && ind_valid_bit[integer'(read_index)];
 	assign read_history = ind_history[integer'(read_index)];
 	assign evict = ~write_hit && we;
-	assign update_history = ind_history[integer'(index)];
+	assign update_history =  ind_history[integer'(index)];
 endmodule
