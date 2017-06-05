@@ -18,8 +18,33 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
-
-
+interface control_bus();
+output logic out_PC_LD        ,
+output logic out_PC_INC       ,
+output logic[1:0] out_PC_MUX_SEL   ,
+output logic out_SP_LD        ,
+output logic out_SP_INCR      ,
+output logic out_SP_DECR      ,
+output logic out_RF_WR        ,
+output logic[1:0] out_RF_WR_SEL    ,
+output logic out_ALU_OPY_SEL  ,
+output logic[3:0] out_ALU_SEL      ,
+output logic out_SCR_WE       ,
+output logic out_SCR_DATA_SE  ,
+output logic[1:0] out_SCR_ADDR_SE  ,
+output logic out_FLG_C_SET    ,
+output logic out_FLG_C_CLR    ,
+output logic out_FLG_C_LD     ,
+output logic out_FLG_Z_LD     ,
+output logic out_FLG_LD_SEL   ,
+output logic out_FLG_SHAD_LD  ,
+output logic out_I_SET        ,
+output logic out_I_CLR        ,
+output logic out_IO_STRB      ,
+output logic[3:0] out_BRANCH_TYPE  ,
+output logic out_rst          ,
+output logic [9:0] out_dest_addr,
+endinterface;
 module pipeline_cpu(
     input wire clk,
     input wire rst,
