@@ -133,7 +133,7 @@ module pipeline_control(
             end
         end
         
-        if (branch_miss) begin
+        if (branch_miss && !return_det && !call_det) begin
             pc_mux_sel = 3'h3;
         end
         else if (valid_predicted_branch) begin
