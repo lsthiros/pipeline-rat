@@ -27,7 +27,6 @@ module PredictionTables(
     input wire branch_taken,
     input wire [9:0] pc,
     input wire [9:0] old_pc,
-    input wire update_pc,
     input wire evict,
     input wire [2:0] prev_history,
     input wire [2:0] update_history,
@@ -37,12 +36,12 @@ module PredictionTables(
     parameter ENTRY_WIDTH = 4;
     parameter ENTRY_DEPTH = 1 << ENTRY_WIDTH;
 
-    wire table_index = pc[3:0];
-    wire update_table_index = old_pc[3:0];
+    wire [3:0] table_index = pc[3:0];
+    wire [3:0] update_table_index = old_pc[3:0];
 
-    logic ind_rst [0:ENTRY_DEPTH - 1];
+    logic [ENTRY_DEPTH - 1:0] ind_rst ;
     logic [ENTRY_DEPTH - 1:0][1:0] ind_prediction ;
-    logic ind_update [0:ENTRY_DEPTH - 1];
+    logic [ENTRY_DEPTH - 1:0] ind_update ;
 
     generate
         genvar idx;

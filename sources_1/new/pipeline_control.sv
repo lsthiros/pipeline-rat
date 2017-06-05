@@ -52,13 +52,15 @@ module pipeline_control(
     
     HazardState current_state = CHECK;
     HazardState nextState = CHECK;
+    reg prediction_loaded = 0;
+    
+    wire valid_predicted_branch = predicted_branch_taken && current_state != PREDICT_BRANCH && !prediction_loaded;
     
     wire raw_ex = ((reg_a == reg_ex) && a_read || (reg_b == reg_ex) && b_read) && reg_ex_en;
     wire raw_wb = ((reg_a == reg_wb) && a_read || (reg_b == reg_wb) && b_read) && reg_wb_en;
     wire call_det = instr_type == 4'h6;
     wire brn_det;
     wire pc_stall;
-    wire mem_stall;
     wire return_det;
     
     assign dec_nop = (branch_miss || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
@@ -67,16 +69,16 @@ module pipeline_control(
         || (call_det || current_state == CALL0 || current_state == CALL1)
         || (current_state == RESET0 || current_state == RESET1)
         || (current_state == RAW_EX || raw_wb || raw_ex)
-        || (predicted_branch_taken);
+        || (current_state == PREDICT_BRANCH);
     assign dec_int = (interrupt && interrupt_flag) && (current_state == CHECK);
-    assign pc_stall = (raw_ex || current_state == RAW_EX || raw_wb || return_det);
-    assign mem_stall = pc_stall || predicted_branch_taken;
-    assign fetch_latch_stall = pc_stall || predicted_branch_taken; /*was fetch_reg_stall*/
+    assign pc_stall = (((raw_ex || raw_wb) && !valid_predicted_branch) || current_state == RAW_EX || return_det);
+    /* This is memory stall... */
+    assign imem_addr_mux = pc_stall || valid_predicted_branch;
+    assign fetch_latch_stall = pc_stall || valid_predicted_branch; /*was fetch_reg_stall*/
     assign pc_reset = reset;
     assign pc_inc = (!pc_reset && !pc_load && !pc_stall);
-    assign pc_load = (predicted_branch_taken || branch_miss || call_det || return_det || current_state == INT0);
+    assign pc_load = (valid_predicted_branch || branch_miss || call_det || return_det || current_state == INT0);
     assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9);
-    assign imem_addr_mux = pc_stall;
     
     
     always_comb
@@ -101,7 +103,7 @@ module pipeline_control(
                 else if (return_det) begin
                     nextState = RETURN0;
                 end
-                else if (predicted_branch_taken) begin
+                else if (valid_predicted_branch) begin
                     nextState = PREDICT_BRANCH;
                 end
                 else begin
@@ -134,7 +136,7 @@ module pipeline_control(
         if (branch_miss) begin
             pc_mux_sel = 3'h3;
         end
-        else if (predicted_branch_taken) begin
+        else if (valid_predicted_branch) begin
             pc_mux_sel = 3'h4;
         end
         else begin
@@ -145,6 +147,15 @@ module pipeline_control(
     always_ff @ (posedge clk)
     begin
         current_state <= nextState;
+        if (reset) begin
+            prediction_loaded <= 0;
+        end
+        else if (nextState == RAW_EX) begin
+            prediction_loaded <= 1;
+        end
+        else if (current_state == CHECK) begin
+            prediction_loaded <=0;
+        end
     end
 
 endmodule
