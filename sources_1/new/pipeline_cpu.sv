@@ -18,7 +18,7 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
-interface control_bus();
+/*interface control_bus();
 output logic out_PC_LD        ,
 output logic out_PC_INC       ,
 output logic[1:0] out_PC_MUX_SEL   ,
@@ -44,7 +44,7 @@ output logic out_IO_STRB      ,
 output logic[3:0] out_BRANCH_TYPE  ,
 output logic out_rst          ,
 output logic [9:0] out_dest_addr,
-endinterface;
+endinterface;*/
 module pipeline_cpu(
     input wire clk,
     input wire rst,

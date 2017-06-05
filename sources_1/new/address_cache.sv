@@ -49,7 +49,7 @@ module HisBlock(
 	input wire rst,
 	input wire we,
 	input wire branch_taken,
-	output logic [2:0] history 
+	output logic [2:0] history
 	);
 
 	always @ ( posedge(clk) ) begin
@@ -88,23 +88,23 @@ module Cache(
 	wire [5:0] in_tag = pc[9:4];
 	wire [3:0] index = update_pc[3:0];
 	wire valid_bit;
-	logic ind_history_write  [0:ENTRY_DEPTH - 1];
-	logic ind_tag_we[0:ENTRY_DEPTH - 1];
-	logic ind_rst [0:ENTRY_DEPTH - 1];
+	logic ind_history_write  [ENTRY_DEPTH - 1:0];
+	logic ind_tag_we[ENTRY_DEPTH - 1:0];
+	logic ind_rst [ENTRY_DEPTH - 1:0];
 	logic [ENTRY_DEPTH - 1:0][2:0] ind_history ;
 	logic [5:0] out_tag;
 
 
 
-	HisBlock histable [0:ENTRY_DEPTH - 1] (
+	HisBlock histable [ENTRY_DEPTH - 1:0] (
 		.clk(clk),
 		.rst(ind_rst),
 		.we(ind_history_write),
 		.branch_taken(~rst && branch_taken),
 		.history(ind_history)
 	);
-	
-	TagBlock tagtable [0:ENTRY_DEPTH - 1] (
+
+	TagBlock tagtable [ENTRY_DEPTH - 1:0] (
 		.clk(clk),
 		.in_tag(in_tag),
 		.tag_we(ind_tag_we),
