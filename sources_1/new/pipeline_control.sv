@@ -1,22 +1,22 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company:
+// Engineer:
+//
 // Create Date: 04/11/2017 02:39:06 PM
-// Design Name: 
+// Design Name:
 // Module Name: pipeline_control
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -46,23 +46,23 @@ module pipeline_control(
     output wire pc_reset,
     output logic [2:0] pc_mux_sel
     );
-    
+
     typedef enum {CHECK, CALL0, CALL1, RAW_EX, BRANCH_MIS0, BRANCH_MIS1, INT0, INT1, INT2, RESET0, RESET1, RETURN0, RETURN1,
         PREDICT_BRANCH} HazardState;
-    
+
     HazardState current_state = CHECK;
     HazardState nextState = CHECK;
     reg prediction_loaded = 0;
-    
+
     wire valid_predicted_branch = predicted_branch_taken && current_state != PREDICT_BRANCH && !prediction_loaded;
-    
+
     wire raw_ex = ((reg_a == reg_ex) && a_read || (reg_b == reg_ex) && b_read) && reg_ex_en;
     wire raw_wb = ((reg_a == reg_wb) && a_read || (reg_b == reg_wb) && b_read) && reg_wb_en;
     wire call_det = instr_type == 4'h6;
     wire brn_det;
     wire pc_stall;
     wire return_det;
-    
+
     assign dec_nop = (branch_miss || current_state == BRANCH_MIS0 || current_state == BRANCH_MIS1)
         || (current_state == INT0 || current_state == INT1 || current_state == INT2)
         || (return_det || current_state == RETURN0 || current_state == RETURN1)
@@ -79,8 +79,8 @@ module pipeline_control(
     assign pc_inc = (!pc_reset && !pc_load && !pc_stall);
     assign pc_load = (valid_predicted_branch || branch_miss || call_det || return_det || current_state == INT0);
     assign return_det = (instr_type == 4'h7 || instr_type == 4'h8 || instr_type == 4'h9);
-    
-    
+
+
     always_comb
     begin
         if (reset) begin
@@ -103,9 +103,9 @@ module pipeline_control(
                 else if (return_det) begin
                     nextState = RETURN0;
                 end
-                else if (valid_predicted_branch) begin
+              /*  else if (valid_predicted_branch) begin
                     nextState = PREDICT_BRANCH;
-                end
+                end */
                 else begin
                     nextState = CHECK;
                 end
@@ -132,7 +132,7 @@ module pipeline_control(
                 nextState = CHECK;
             end
         end
-        
+
         if (branch_miss && !return_det && !call_det) begin
             pc_mux_sel = 3'h3;
         end
@@ -143,7 +143,7 @@ module pipeline_control(
             pc_mux_sel = {1'h0, instr_pc_mux_sel};
         end
     end
-    
+
     always_ff @ (posedge clk)
     begin
         current_state <= nextState;

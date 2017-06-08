@@ -503,7 +503,7 @@ module pipeline_cpu(
     BranchPredictor my_branch_predictor(
       .clk(clk),
       .rst(rst),
-      .pc(pc_delay),
+      .pc(pc_count),
       .update_pc(cv_pc_out),
       .wb_addr(cv_dest_addr),  //TODO: connect wb addr this is the one you branch to
       .branch_taken(bc_branch_taken), // from BRANCH_CALCULATOR
