@@ -80,7 +80,7 @@ module pipeline_cpu(
     wire [9:0]  fetch_addr_out;
     wire [9:0] fetch_alt_in;
     wire [9:0] fetch_alt_out;
-    
+
     wire bc_branch_miss;
     wire bc_branch_taken;
 
@@ -167,7 +167,7 @@ module pipeline_cpu(
 
     logic branch_table_we;
     wire branch_prediction;
-
+    wire [9:0] jump_addr;
     PC my_pc (
         .CLK        (clk),
         .PC_INC     (pc_inc),
@@ -333,11 +333,11 @@ module pipeline_cpu(
 
         .in_dest_addr(fetch_instr_out[12:3]),
         .out_dest_addr(cv_dest_addr),
-        
+
         /* Branch predictor stuff */
         .alt_out(cv_alt_addr_out),
         .alt_in(fetch_alt_out),
-        
+
         .branch_taken_in(fetch_branch_prediction),
         .branch_taken_out(cv_branch_prediction)
     );
@@ -505,8 +505,10 @@ module pipeline_cpu(
       .rst(rst),
       .pc(pc_delay),
       .update_pc(cv_pc_out),
+      .wb_addr(cv_dest_addr),  //TODO: connect wb addr this is the one you branch to
       .branch_taken(bc_branch_taken), // from BRANCH_CALCULATOR
       .we(branch_table_we), // TODO: from pipeline control
+      .jump_addr(jump_addr), // TODO: to pc im
       .prediction(branch_prediction) //TODO: to pipleline control
       );
 

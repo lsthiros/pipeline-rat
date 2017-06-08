@@ -14,7 +14,7 @@ entity SYS_WRAPPER is
            RST      : in  STD_LOGIC;
            INT      : in  STD_LOGIC;
            SWITCHES : in  STD_LOGIC_VECTOR (15 downto 0);
-           LEDS     : out STD_LOGIC_VECTOR (15 downto 0);
+           LED     : out STD_LOGIC_VECTOR (15 downto 0);
            SSEG     : out STD_LOGIC_VECTOR (7 downto 0);
            DISP     : out STD_LOGIC_VECTOR (3 downto 0));
 end SYS_WRAPPER;
@@ -77,7 +77,7 @@ begin
 -- Instantiate RAT_WRAPPER --------------------------------------------------
 rat: RAT_pipeline_wrapper
     Port Map(
-        LEDS      => LEDS,
+        LEDS      => LED,
         SSEG_VAL1 => s_sseg_count1,
         SSEG_VAL2 => s_sseg_count2,
         SSEG_CR   => s_sseg_cr,
