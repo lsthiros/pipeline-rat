@@ -162,7 +162,7 @@ case op is
 	when "0100100" => -- ASR
 		RF_WR       <= '1';
 		RF_WR_SEL   <= "00";
-		ALU_SEL     <= x"E";
+		ALU_SEL     <= "1101";
 		FLG_LD_SEL  <= '0';
 		FLG_C_LD    <= '1';
 		FLG_Z_LD    <= '1';

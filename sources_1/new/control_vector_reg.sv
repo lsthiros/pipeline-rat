@@ -1,22 +1,22 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
+// Company:
 // Engineer: Christopher Gerdom
-// 
+//
 // Create Date: 04/18/2017 09:09:28 PM
-// Design Name: 
+// Design Name:
 // Module Name: control_vector_reg
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 //interface control_vector;
@@ -44,7 +44,7 @@
 //	logic IO_STRB      ;
 //	logic BRANCH_TYPE  ;
 //	logic rst          ;
-	
+
 //endinterface:control_vector
 
 module control_vector_reg(
@@ -75,49 +75,55 @@ module control_vector_reg(
     output logic out_rst          ,
     output logic [9:0] out_dest_addr,
 
-    input logic in_PC_LD        ,
-    input logic in_PC_INC       ,
-    input logic[1:0] in_PC_MUX_SEL   ,
-    input logic in_SP_LD        ,
-    input logic in_SP_INCR      ,
-    input logic in_SP_DECR      ,
-    input logic in_RF_WR        ,
-    input logic[1:0] in_RF_WR_SEL    ,
-    input logic in_ALU_OPY_SEL  ,
-    input logic[3:0] in_ALU_SEL      ,
-    input logic in_SCR_WE       ,
-    input logic in_SCR_DATA_SE  ,
-    input logic [1:0] in_SCR_ADDR_SE  ,
-    input logic in_FLG_C_SET    ,
-    input logic in_FLG_C_CLR    ,
-    input logic in_FLG_C_LD     ,
-    input logic in_FLG_Z_LD     ,
-    input logic in_FLG_LD_SEL   ,
-    input logic in_FLG_SHAD_LD  ,
-    input logic in_I_SET        ,
-    input logic in_I_CLR        ,
-    input logic in_IO_STRB      ,
-    input logic[3:0] in_BRANCH_TYPE  ,
-    input logic in_rst          ,
-    input logic [9:0] in_dest_addr,
-	input logic interupt,
-	input logic clk,
-	input logic nop,
-	
+    input wire in_PC_LD        ,
+    input wire in_PC_INC       ,
+    input wire[1:0] in_PC_MUX_SEL   ,
+    input wire in_SP_LD        ,
+    input wire in_SP_INCR      ,
+    input wire in_SP_DECR      ,
+    input wire in_RF_WR        ,
+    input wire[1:0] in_RF_WR_SEL    ,
+    input wire in_ALU_OPY_SEL  ,
+    input wire[3:0] in_ALU_SEL      ,
+    input wire in_SCR_WE       ,
+    input wire in_SCR_DATA_SE  ,
+    input wire [1:0] in_SCR_ADDR_SE  ,
+    input wire in_FLG_C_SET    ,
+    input wire in_FLG_C_CLR    ,
+    input wire in_FLG_C_LD     ,
+    input wire in_FLG_Z_LD     ,
+    input wire in_FLG_LD_SEL   ,
+    input wire in_FLG_SHAD_LD  ,
+    input wire in_I_SET        ,
+    input wire in_I_CLR        ,
+    input wire in_IO_STRB      ,
+    input wire[3:0] in_BRANCH_TYPE  ,
+    input wire in_rst          ,
+    input wire [9:0] in_dest_addr,
+	input wire interupt,
+	input wire clk,
+	input wire nop,
+
 	// instruction data
-	input  logic[7:0] in_IR,
+	input wire [7:0] in_IR,
 	output logic[7:0] out_IR,
 	// register values
-	input logic[7:0] in_DX,
+	input wire[7:0] in_DX,
 	output logic[7:0] out_DX,
-	input logic[7:0] in_DY,
+	input wire[7:0] in_DY,
 	output logic[7:0] out_DY,
 	// addresses
-	input logic[4:0] in_WB_ADDR,
+	input wire[4:0] in_WB_ADDR,
 	output logic[4:0] out_WB_ADDR,
 	// program counters
-	input logic[9:0] in_PC,
-	output logic[9:0] out_PC	
+	input wire[9:0] in_PC,
+	output logic[9:0] out_PC,
+	// branch prediction
+	output logic [9:0] alt_out,
+	input wire [9:0] alt_in,
+
+	input wire branch_taken_in,
+	output logic branch_taken_out
 );
 
 
@@ -154,6 +160,8 @@ if (in_rst) begin
     out_I_CLR       <= 0;
     out_IO_STRB     <= 0;
     out_BRANCH_TYPE <= 0;
+		branch_taken_out<= 0;
+		alt_out 				<= 0;
 end
 else if(interupt == 1'b1) begin
 	out_PC_LD       <= 1;
@@ -181,6 +189,8 @@ else if(interupt == 1'b1) begin
 	out_BRANCH_TYPE <= 0;
 	out_rst         <= 0;
 	out_PC <= in_PC - 1;
+	branch_taken_out<= 0;	//TODO: make this the right case for interupt
+	alt_out 				<= 0;
 // When nop
 end else if(nop == 1'b0) begin
 	out_PC_LD       <= in_PC_LD        ;
@@ -207,6 +217,8 @@ end else if(nop == 1'b0) begin
     out_IO_STRB     <= in_IO_STRB      ;
     out_BRANCH_TYPE <= in_BRANCH_TYPE  ;
     out_rst         <= in_rst          ;
+		branch_taken_out<= branch_taken_in;
+		alt_out 				<= alt_in;
 end else begin
 	out_PC_LD       <= 0;
 	out_PC_INC      <= 0;
@@ -232,7 +244,8 @@ end else begin
 	out_IO_STRB     <= 0;
 	out_BRANCH_TYPE <= 4'b0000;
 	out_rst         <= 0;
-                    
+	branch_taken_out<= 0;
+	alt_out 				<= 0;
 
 end
 end

@@ -2,22 +2,22 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Company: CALPOLY
 // Engineer: CHRIS GERDOM
-// 
+//
 // Create Date: 04/14/2017 05:18:15 PM
 // Design Name: RAT PIPELINE
 // Module Name: BRANCH_CALCULATOR
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
+// Project Name:
+// Target Devices:
+// Tool Versions:
 // Description: CALCULATES IF THE BRANCH IS TAKEN GIVEN THE INPUT COMMAND, C AND Z FLAGS
-// 
-// Dependencies: 
-// 
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
-/* 
+//
+/*
 	0 none
 	1 BRCC
 	2 BRCS
@@ -29,11 +29,11 @@
 	8 RETID
 	9 RETIE
 	A
-	B 
-	C 
-	D 
+	B
+	C
+	D
 	E
-	F  
+	F
 */
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -42,15 +42,20 @@ module BRANCH_CALCULATOR(
     input wire [3:0] BRANCH_TYPE,
     input wire C,
     input wire Z,
+    input wire branch_predicted,
+    output wire branch_miss,
     output  reg BRANCH_TAKEN
     );
-    
+
+
+    assign branch_miss = branch_predicted ^ BRANCH_TAKEN;
+
     always @ ( BRANCH_TYPE or C or Z)
-    
+
         case(BRANCH_TYPE)
-   
-        4'h0 : BRANCH_TAKEN = 1'b0; //none 
-        
+
+        4'h0 : BRANCH_TAKEN = 1'b0; //none
+
 		4'h1 : begin // BRCC
                 if(C == 1'b0) begin
                     BRANCH_TAKEN = 1'b1;
@@ -94,7 +99,7 @@ module BRANCH_CALCULATOR(
         4'h9 : begin // RETIE
 				BRANCH_TAKEN = 1'b1;
 			  end
-		default : BRANCH_TAKEN =  1'b0; 
+		default : BRANCH_TAKEN =  1'b0;
 		endcase
-		
+
 endmodule
